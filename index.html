@@ -1,18 +1,154 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Ficha Mage: The Ascension</title>
-  <link rel="stylesheet" href="styles.css" />
+  <title>Ficha Editável - Mage: The Ascension</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <main class="page-shell">
-    <section class="sheet-frame">
-      <img class="frame-art" src="assets/frame.png" alt="Moldura dourada com estrelas" />
-      <div id="sheet" class="sheet-content"></div>
+  <main class="sheet" id="sheet">
+    <header class="hero">
+      <div>
+        <p class="kicker">Mage: The Ascension</p>
+        <h1>Ficha de Personagem</h1>
+      </div>
+      <div class="actions no-print">
+        <label class="file-btn">
+          Carregar JSON
+          <input id="loadJson" type="file" accept="application/json" />
+        </label>
+        <button id="saveBtn" type="button">Salvar JSON</button>
+        <button id="clearBtn" type="button">Limpar</button>
+      </div>
+    </header>
+
+    <section class="panel identity">
+      <label>Nome<input data-field="identity.name" placeholder="Nome do personagem" /></label>
+      <label>Jogador(a)<input data-field="identity.player" /></label>
+      <label>Natureza<input data-field="identity.nature" /></label>
+      <label>Comportamento<input data-field="identity.demeanor" /></label>
+      <label>Tradição / Facção<input data-field="identity.tradition" /></label>
+      <label>Essência<input data-field="identity.essence" /></label>
+      <label>Crônica<input data-field="identity.chronicle" /></label>
+      <label>Cabala<input data-field="identity.cabal" /></label>
+      <label>Conceito<input data-field="identity.concept" /></label>
+    </section>
+
+    <section class="grid three">
+      <div class="panel">
+        <h2>Atributos Físicos</h2>
+        <div data-dots="attributes.strength" data-label="Força"></div>
+        <div data-dots="attributes.dexterity" data-label="Destreza"></div>
+        <div data-dots="attributes.stamina" data-label="Vigor"></div>
+      </div>
+      <div class="panel">
+        <h2>Atributos Sociais</h2>
+        <div data-dots="attributes.charisma" data-label="Carisma"></div>
+        <div data-dots="attributes.manipulation" data-label="Manipulação"></div>
+        <div data-dots="attributes.appearance" data-label="Aparência"></div>
+      </div>
+      <div class="panel">
+        <h2>Atributos Mentais</h2>
+        <div data-dots="attributes.perception" data-label="Percepção"></div>
+        <div data-dots="attributes.intelligence" data-label="Inteligência"></div>
+        <div data-dots="attributes.wits" data-label="Raciocínio"></div>
+      </div>
+    </section>
+
+    <section class="grid three">
+      <div class="panel">
+        <h2>Talentos</h2>
+        <div data-dots="abilities.alertness" data-label="Prontidão"></div>
+        <div data-dots="abilities.athletics" data-label="Esportes"></div>
+        <div data-dots="abilities.awareness" data-label="Consciência"></div>
+        <div data-dots="abilities.brawl" data-label="Briga"></div>
+        <div data-dots="abilities.empathy" data-label="Empatia"></div>
+        <div data-dots="abilities.expression" data-label="Expressão"></div>
+        <div data-dots="abilities.intimidation" data-label="Intimidação"></div>
+        <div data-dots="abilities.leadership" data-label="Liderança"></div>
+        <div data-dots="abilities.streetwise" data-label="Manha"></div>
+        <div data-dots="abilities.subterfuge" data-label="Lábia"></div>
+      </div>
+      <div class="panel">
+        <h2>Perícias</h2>
+        <div data-dots="abilities.crafts" data-label="Ofícios"></div>
+        <div data-dots="abilities.drive" data-label="Condução"></div>
+        <div data-dots="abilities.etiquette" data-label="Etiqueta"></div>
+        <div data-dots="abilities.firearms" data-label="Armas de Fogo"></div>
+        <div data-dots="abilities.meditation" data-label="Meditação"></div>
+        <div data-dots="abilities.melee" data-label="Armas Brancas"></div>
+        <div data-dots="abilities.research" data-label="Pesquisa"></div>
+        <div data-dots="abilities.stealth" data-label="Furtividade"></div>
+        <div data-dots="abilities.survival" data-label="Sobrevivência"></div>
+        <div data-dots="abilities.technology" data-label="Tecnologia"></div>
+      </div>
+      <div class="panel">
+        <h2>Conhecimentos</h2>
+        <div data-dots="abilities.academics" data-label="Acadêmicos"></div>
+        <div data-dots="abilities.computer" data-label="Computador"></div>
+        <div data-dots="abilities.cosmology" data-label="Cosmologia"></div>
+        <div data-dots="abilities.enigmas" data-label="Enigmas"></div>
+        <div data-dots="abilities.esoterica" data-label="Esotérica"></div>
+        <div data-dots="abilities.investigation" data-label="Investigação"></div>
+        <div data-dots="abilities.law" data-label="Direito"></div>
+        <div data-dots="abilities.medicine" data-label="Medicina"></div>
+        <div data-dots="abilities.occult" data-label="Ocultismo"></div>
+        <div data-dots="abilities.science" data-label="Ciência"></div>
+      </div>
+    </section>
+
+    <section class="grid two">
+      <div class="panel">
+        <h2>Esferas</h2>
+        <div class="sphere-grid">
+          <div data-dots="spheres.correspondence" data-label="Correspondência"></div>
+          <div data-dots="spheres.entropy" data-label="Entropia"></div>
+          <div data-dots="spheres.forces" data-label="Forças"></div>
+          <div data-dots="spheres.life" data-label="Vida"></div>
+          <div data-dots="spheres.matter" data-label="Matéria"></div>
+          <div data-dots="spheres.mind" data-label="Mente"></div>
+          <div data-dots="spheres.prime" data-label="Primórdio"></div>
+          <div data-dots="spheres.spirit" data-label="Espírito"></div>
+          <div data-dots="spheres.time" data-label="Tempo"></div>
+        </div>
+      </div>
+      <div class="panel">
+        <h2>Vantagens</h2>
+        <div data-dots="advantages.arete" data-label="Arete" data-max="10"></div>
+        <div data-dots="advantages.willpower" data-label="Força de Vontade" data-max="10"></div>
+        <div data-dots="advantages.quintessence" data-label="Quintessência" data-max="20"></div>
+        <div data-dots="advantages.paradox" data-label="Paradoxo" data-max="20"></div>
+      </div>
+    </section>
+
+    <section class="grid two">
+      <div class="panel">
+        <h2>Antecedentes</h2>
+        <textarea data-field="backgrounds" placeholder="Avatar, Biblioteca, Recursos, Aliados..."></textarea>
+      </div>
+      <div class="panel">
+        <h2>Paradigma, Foco e Instrumentos</h2>
+        <textarea data-field="magicFocus" placeholder="Como o personagem entende e executa magia?"></textarea>
+      </div>
+    </section>
+
+    <section class="grid two">
+      <div class="panel">
+        <h2>Ressonância / Méritos / Defeitos</h2>
+        <textarea data-field="traits"></textarea>
+      </div>
+      <div class="panel">
+        <h2>Saúde</h2>
+        <div class="health" id="health"></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Anotações</h2>
+      <textarea class="large" data-field="notes" placeholder="Rotes, grimório, contatos, histórico, equipamentos..."></textarea>
     </section>
   </main>
-  <script src="script.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>
