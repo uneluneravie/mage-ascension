@@ -14,7 +14,8 @@
   },
   "identity": {
     "name": "mago lari",
-    "experience": 0
+    "experience": 0,
+    "chronicle": "Idade Média"
   },
   "health": {
     "level": "healthy"
