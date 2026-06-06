@@ -1,8 +1,26 @@
 {
-  "identity": {
-    "name": "teste 1"
+  "creation": {
+    "mode": false,
+    "attributePriorities": {
+      "primary": "physical",
+      "secondary": "social",
+      "tertiary": "mental"
+    },
+    "abilityPriorities": {
+      "primary": "talents",
+      "secondary": "skills",
+      "tertiary": "knowledges"
+    }
   },
-  "attributes": {
-    "perception": 2
+  "identity": {
+    "name": "mago",
+    "experience": 0
+  },
+  "health": {
+    "level": "healthy"
+  },
+  "advantages": {
+    "quintessence": 0,
+    "paradox": 0
   }
 }
