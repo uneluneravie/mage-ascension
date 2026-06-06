@@ -14,14 +14,13 @@
   },
   "identity": {
     "name": "mago lari",
-    "experience": 0,
-    "chronicle": "Idade Média"
+    "experience": 0
   },
   "health": {
     "level": "healthy"
   },
   "advantages": {
-    "quintessence": 0,
+    "quintessence": 3,
     "paradox": 0
   }
 }
