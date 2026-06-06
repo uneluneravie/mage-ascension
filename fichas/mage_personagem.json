@@ -13,14 +13,84 @@
     }
   },
   "identity": {
-    "name": "mago",
-    "experience": 0
+    "name": "mago lari",
+    "experience": 50,
+    "player": "lari"
   },
   "health": {
     "level": "healthy"
   },
+  "attributes": {
+    "physical": {
+      "strength": 1,
+      "dexterity": 1,
+      "stamina": 1
+    },
+    "social": {
+      "charisma": 1,
+      "manipulation": 1,
+      "appearance": 1
+    },
+    "mental": {
+      "perception": 1,
+      "intelligence": 1,
+      "wits": 1
+    }
+  },
+  "abilities": {
+    "alertness": 0,
+    "athletics": 0,
+    "awareness": 0,
+    "brawl": 0,
+    "empathy": 0,
+    "expression": 0,
+    "intimidation": 0,
+    "leadership": 0,
+    "streetwise": 0,
+    "subterfuge": 0,
+    "crafts": 0,
+    "drive": 0,
+    "etiquette": 0,
+    "firearms": 0,
+    "meditation": 0,
+    "melee": 0,
+    "research": 0,
+    "stealth": 0,
+    "survival": 0,
+    "technology": 0,
+    "academics": 0,
+    "computer": 0,
+    "cosmology": 0,
+    "enigmas": 0,
+    "esoterica": 0,
+    "investigation": 0,
+    "law": 0,
+    "medicine": 0,
+    "occult": 0,
+    "science": 0
+  },
+  "spheres": {
+    "fate": 0,
+    "space": 0,
+    "spirit": 0,
+    "forces": 3,
+    "matter": 0,
+    "mind": 0,
+    "death": 0,
+    "prime": 0,
+    "time": 0,
+    "life": 0
+  },
   "advantages": {
-    "quintessence": 0,
-    "paradox": 0
+    "quintessence": 3,
+    "paradox": 0,
+    "arete": 2
+  },
+  "ai": {
+    "problemApproach": "conversa",
+    "scenePreference": "conversas",
+    "desiredCapability": "voar",
+    "powerOrVersatility": "Mais versátil",
+    "currentWeakness": "só sabe falar"
   }
 }

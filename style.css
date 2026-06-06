@@ -3,11 +3,13 @@
   --panel: rgba(12, 10, 9, .92);
   --gold: #d6ad50;
   --gold-2: #fff0a8;
+  --arcane-purple: #d96cff;
   --muted: #c9b989;
   --line: rgba(214, 173, 80, .45);
   --field: rgba(255,255,255,.045);
 }
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 body {
   margin: 0;
   min-height: 100vh;
@@ -38,15 +40,31 @@ body::before {
   box-shadow: 0 0 0 8px rgba(214,173,80,.08), 0 20px 60px rgba(0,0,0,.65);
   position: relative;
 }
-.sheet::before, .sheet::after {
-  content: "☉";
-  position: absolute;
-  color: var(--gold);
-  font-size: 54px;
-  line-height: 1;
-  opacity: .75;
+.autosave-indicator {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 8;
+  display: grid;
+  gap: 3px;
+  min-width: 160px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 9px 10px;
+  color: var(--gold-2);
+  background: rgba(12, 10, 9, .94);
+  box-shadow: 0 10px 30px rgba(0,0,0,.45);
+  font-size: 10px;
+  text-align: right;
 }
-.sheet::before { top: -14px; right: 16px; }
+.autosave-indicator[hidden] { display: none; }
+#autosaveFeedback {
+  min-height: 12px;
+  color: #bfe8a8;
+}
+#autosaveFeedback.is-error {
+  color: #ffb4a8;
+}
 .sheet::after { bottom: -18px; left: 18px; transform: rotate(180deg); }
 .hero {
   display: flex;
@@ -87,6 +105,11 @@ button, .file-btn {
   stroke-linejoin: round;
   stroke-width: 2;
 }
+.ai-preview-action {
+  color: var(--arcane-purple);
+  border-color: var(--arcane-purple);
+  box-shadow: 0 0 14px rgba(217,108,255,.28);
+}
 .file-btn input { display: none; }
 .grid { display: grid; gap: 16px; margin: 16px 0; }
 .three { grid-template-columns: repeat(3, 1fr); }
@@ -100,7 +123,6 @@ button, .file-btn {
   box-shadow: inset 0 0 30px rgba(214,173,80,.03);
   position: relative;
 }
-.panel + .panel { margin-top: 16px; }
 .identity { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
 .creation-panel[hidden] { display: none; }
 .creation-panel { margin: 16px 0; }
@@ -165,6 +187,14 @@ select option {
   color: #100d08;
   background: #fff7dc;
 }
+.ai-suggested-field,
+.ai-suggested-field:disabled {
+  color: #f8dcff;
+  border-color: var(--arcane-purple);
+  background: rgba(80, 18, 110, .42);
+  opacity: 1;
+  box-shadow: 0 0 0 2px rgba(217,108,255,.16), inset 0 0 18px rgba(217,108,255,.12);
+}
 textarea { min-height: 140px; resize: vertical; }
 textarea.large { min-height: 220px; }
 .health-control {
@@ -200,7 +230,7 @@ textarea.large { min-height: 220px; }
 }
 .experience-control {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 34px;
+  grid-template-columns: minmax(0, 1fr) 34px 34px;
   gap: 8px;
   align-items: center;
 }
@@ -208,6 +238,9 @@ textarea.large { min-height: 220px; }
   border-color: var(--gold-2);
   color: #100d08;
   background: var(--gold);
+}
+.ai-integration-btn {
+  color: var(--gold-2);
 }
 .number-row {
   grid-template-columns: minmax(120px, 1fr) auto;
@@ -281,6 +314,16 @@ textarea.large { min-height: 220px; }
   opacity: .55;
 }
 .dot.filled { background: var(--gold); }
+.dot-row.ai-suggested .dot-label {
+  color: #f8dcff;
+  text-shadow: 0 0 10px rgba(217,108,255,.5);
+}
+.dot-row.ai-suggested .dot.filled {
+  background: var(--arcane-purple);
+  border-color: #f8dcff;
+  box-shadow: 0 0 10px rgba(217,108,255,.7);
+  opacity: 1;
+}
 .sphere-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0 28px; }
 .sphere-grid .dot-row:nth-child(odd) {
   position: relative;
@@ -344,6 +387,9 @@ textarea.large { min-height: 220px; }
   gap: 10px;
   grid-template-columns: repeat(3, 1fr);
 }
+#gitSheetList {
+  margin-top: 14px;
+}
 .start-action-btn {
   min-height: 92px;
   display: grid;
@@ -369,6 +415,68 @@ textarea.large { min-height: 220px; }
 .github-form {
   display: grid;
   gap: 10px;
+}
+.ai-modal {
+  width: min(620px, 100%);
+}
+.ai-form {
+  display: grid;
+  gap: 12px;
+}
+.ai-question-panel,
+.ai-result-panel {
+  display: grid;
+  gap: 12px;
+}
+.ai-question-panel[hidden],
+.ai-result-panel[hidden] {
+  display: none;
+}
+.ai-form label {
+  gap: 6px;
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 12px;
+  color: #f4e3b0;
+}
+.ai-form em {
+  color: var(--muted);
+  font-size: 10.5px;
+}
+.ai-form textarea {
+  min-height: 58px;
+  max-height: 92px;
+}
+.ai-form select {
+  min-height: 36px;
+}
+.ai-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+.ai-actions button {
+  min-width: 132px;
+}
+.ai-actions button.copied {
+  color: #100d08;
+  background: var(--gold);
+}
+.ai-prompt-output {
+  min-height: 190px;
+  max-height: 320px;
+  font-size: 11px;
+  line-height: 1.45;
+  color: #fff7dc;
+  background: rgba(16,13,8,.82);
+  border-color: rgba(214,173,80,.36);
+}
+.ai-json-input {
+  min-height: 260px;
+  max-height: 420px;
+  font-size: 11px;
+  line-height: 1.45;
 }
 .github-form button[type="submit"] {
   width: 100%;

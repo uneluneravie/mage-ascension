@@ -137,10 +137,17 @@ const sheetsHandleStoreName = 'handles';
 const sheetsDirHandleKey = 'fichas';
 const githubSettingsKey = 'mage-ascension-github-settings';
 const defaultGithubRepo = 'uneluneravie/mage-ascension';
+const autosaveIntervalMs = 15 * 60 * 1000;
 let currentSheetFile = '';
 let sheetsDirHandle = null;
 let levelEditMode = false;
 let creationMode = false;
+let autosaveTimer = null;
+let autosaveTickTimer = null;
+let autosaveNextAt = 0;
+let autosaveLastSavedJson = '';
+let autosaveAuth = null;
+let aiPreviewState = null;
 
 function setPath(obj, path, value) {
   const keys = path.split('.');
@@ -150,6 +157,36 @@ function setPath(obj, path, value) {
 }
 function getPath(obj, path, fallback = '') {
   return path.split('.').reduce((acc, key) => acc?.[key], obj) ?? fallback;
+}
+
+function hasPath(obj, path) {
+  const keys = path.split('.');
+  let ref = obj;
+  for (const key of keys) {
+    if (!ref || !Object.prototype.hasOwnProperty.call(ref, key)) return false;
+    ref = ref[key];
+  }
+  return true;
+}
+
+function cloneData(data) {
+  return JSON.parse(JSON.stringify(data));
+}
+
+function effectiveValue(path, fallback = '') {
+  if (aiPreviewState && hasPath(aiPreviewState, path)) {
+    return getPath(aiPreviewState, path, fallback);
+  }
+  return getPath(state, path, fallback);
+}
+
+function hasAiSuggestion(path) {
+  return Boolean(aiPreviewState && hasPath(aiPreviewState, path));
+}
+
+function isAiSuggestionChanged(path) {
+  if (!hasAiSuggestion(path)) return false;
+  return JSON.stringify(getPath(aiPreviewState, path, null)) !== JSON.stringify(getPath(state, path, null));
 }
 
 function pathGroup(path, groups) {
@@ -345,7 +382,7 @@ function setDotCost(container, target = null) {
   const cost = container.querySelector('.xp-cost');
   if (!cost) return;
 
-  if (!levelEditMode || !xpMultiplierFor(container.dataset.dots)) {
+  if (aiPreviewState || !levelEditMode || !xpMultiplierFor(container.dataset.dots)) {
     cost.textContent = '';
     return;
   }
@@ -374,6 +411,7 @@ function updateAllDotCosts() {
 }
 
 function setLevelEditing(editable) {
+  if (aiPreviewState) editable = false;
   levelEditMode = editable;
   document.getElementById('sheet')?.classList.toggle('level-editing', editable);
   const button = document.getElementById('levelEditBtn');
@@ -461,9 +499,12 @@ function bindLevelEditor() {
 }
 
 function renderDots(container) {
-  const value = Number(getPath(state, container.dataset.dots, 0));
+  const path = container.dataset.dots;
+  const value = Number(effectiveValue(path, 0));
+  container.classList.toggle('ai-suggested', isAiSuggestionChanged(path));
   container.querySelectorAll('.dot').forEach((dot, idx) => {
     dot.classList.toggle('filled', idx < value);
+    dot.classList.toggle('ai-suggested', isAiSuggestionChanged(path) && idx < value);
   });
   setDotCost(container);
 }
@@ -482,7 +523,7 @@ function makeHealth() {
 }
 
 function updateHealthPenalty() {
-  const level = getPath(state, 'health.level', healthLevels[0].value);
+  const level = effectiveValue('health.level', healthLevels[0].value);
   const selected = healthLevels.find(item => item.value === level) || healthLevels[0];
   const penalty = document.getElementById('healthPenalty');
 
@@ -515,6 +556,10 @@ function ensureHealthLevel() {
 function bindFields() {
   document.querySelectorAll('[data-field]').forEach(el => {
     const updateField = e => {
+      if (aiPreviewState) {
+        renderFields();
+        return;
+      }
       let value = e.target.type === 'number' ? Number(e.target.value || e.target.dataset.numberDefault || 0) : e.target.value;
       if (creationMode && e.target.dataset.field === 'identity.experience') {
         value = Math.min(15, Math.max(0, value));
@@ -568,7 +613,12 @@ function ensureNumberDefaults() {
 function renderFields() {
   document.querySelectorAll('[data-field]').forEach(el => {
     const fallback = el.dataset.field === 'health.level' ? healthLevels[0].value : el.dataset.numberDefault || '';
-    el.value = getPath(state, el.dataset.field, fallback);
+    el.value = effectiveValue(el.dataset.field, fallback);
+    el.classList.toggle('ai-suggested-field', isAiSuggestionChanged(el.dataset.field));
+    el.disabled = Boolean(aiPreviewState);
+  });
+  document.querySelectorAll('[data-stepper]').forEach(button => {
+    button.disabled = Boolean(aiPreviewState);
   });
   document.querySelectorAll('[data-dots]').forEach(renderDots);
   updateHealthPenalty();
@@ -623,6 +673,7 @@ function sheetUrl(fileName) {
 }
 
 function applySheetData(data, fileName = '') {
+  clearAiPreview();
   clearState();
   Object.assign(state, data);
   currentSheetFile = fileName;
@@ -644,6 +695,98 @@ function setSheetModalStatus(message) {
 
 function setGithubModalStatus(message) {
   document.getElementById('githubModalStatus').textContent = message;
+}
+
+function sheetJson() {
+  return JSON.stringify(state, null, 2);
+}
+
+function currentSheetName() {
+  return currentSheetFile || sheetFileName();
+}
+
+function formatDuration(ms) {
+  const minutes = Math.max(0, Math.ceil(ms / 60000));
+  return `${minutes} min`;
+}
+
+function setAutosaveFeedback(message, isError = false) {
+  const feedback = document.getElementById('autosaveFeedback');
+  feedback.textContent = message;
+  feedback.classList.toggle('is-error', isError);
+  if (message) {
+    window.setTimeout(() => {
+      if (feedback.textContent === message) feedback.textContent = '';
+    }, 6000);
+  }
+}
+
+function updateAutosaveCountdown() {
+  const indicator = document.getElementById('autosaveIndicator');
+  const countdown = document.getElementById('autosaveCountdown');
+
+  if (!autosaveAuth) {
+    indicator.hidden = true;
+    return;
+  }
+
+  indicator.hidden = false;
+  countdown.textContent = `Autosave em ${formatDuration(autosaveNextAt - Date.now())}`;
+}
+
+function scheduleAutosave() {
+  if (!autosaveAuth) return;
+  window.clearTimeout(autosaveTimer);
+  autosaveNextAt = Date.now() + autosaveIntervalMs;
+  updateAutosaveCountdown();
+  autosaveTimer = window.setTimeout(runAutosave, autosaveIntervalMs);
+}
+
+function startAutosave(auth) {
+  autosaveAuth = auth;
+  window.clearInterval(autosaveTickTimer);
+  autosaveTickTimer = window.setInterval(updateAutosaveCountdown, 1000);
+  scheduleAutosave();
+}
+
+async function uploadSheetToGithub({ repo, branch, sheetsPath, token }, fileName, content, message) {
+  const sheetPath = joinGitHubPath(sheetsPath, fileName);
+  await upsertGitHubFile(repo, branch, sheetPath, content, message, token);
+  await updateGitHubManifest(repo, branch, sheetsPath, fileName, token);
+  currentSheetFile = fileName;
+  autosaveLastSavedJson = content;
+  return sheetPath;
+}
+
+async function runAutosave() {
+  if (!autosaveAuth) return;
+
+  try {
+    ensureHealthLevel();
+    ensureNumberDefaults();
+    const content = sheetJson();
+    if (content === autosaveLastSavedJson) {
+      console.log('[autosave] Nenhuma alteração para enviar.');
+      scheduleAutosave();
+      return;
+    }
+
+    const fileName = currentSheetName();
+    const sheetPath = await uploadSheetToGithub(
+      autosaveAuth,
+      fileName,
+      content,
+      `Autosave ficha ${fileName}`
+    );
+    document.getElementById('githubUploadBtn').title = `Ficha enviada para ${autosaveAuth.repo}/${sheetPath}`;
+    console.log(`[autosave] Ficha salva com sucesso em ${autosaveAuth.repo}/${sheetPath}.`);
+    setAutosaveFeedback('Ficha salva com sucesso.');
+  } catch (err) {
+    console.error('[autosave] Falha ao salvar ficha.', err);
+    setAutosaveFeedback('Falha no autosave.', true);
+  } finally {
+    scheduleAutosave();
+  }
 }
 
 async function loadSheetList() {
@@ -807,6 +950,7 @@ function setCreationMode(enabled) {
 }
 
 function startNewCharacter() {
+  clearAiPreview();
   clearState();
   currentSheetFile = '';
   state.creation = {
@@ -901,6 +1045,223 @@ function openGithubModal() {
 
 function closeGithubModal() {
   document.getElementById('githubModal').hidden = true;
+}
+
+function storeAiQuestionValues() {
+  const answers = {};
+  document.querySelectorAll('[data-ai-question]').forEach(input => {
+    const key = input.dataset.aiQuestion;
+    answers[key] = input.value.trim();
+    setPath(state, `ai.${key}`, answers[key]);
+  });
+  return answers;
+}
+
+function openAiModal() {
+  showAiQuestionPanel();
+  document.querySelectorAll('[data-ai-question]').forEach(input => {
+    const key = input.dataset.aiQuestion;
+    input.value = getPath(state, `ai.${key}`, '');
+  });
+  document.getElementById('aiPromptOutput').value = '';
+  document.getElementById('aiJsonInput').value = '';
+  setAiModalStatus('');
+  document.getElementById('aiModal').hidden = false;
+}
+
+function closeAiModal() {
+  document.getElementById('aiModal').hidden = true;
+}
+
+function aiAnswers() {
+  return {
+    RESPOSTA_1: getPath(state, 'ai.problemApproach', ''),
+    RESPOSTA_2: getPath(state, 'ai.scenePreference', ''),
+    RESPOSTA_3: getPath(state, 'ai.desiredCapability', ''),
+    RESPOSTA_4: getPath(state, 'ai.powerOrVersatility', ''),
+    RESPOSTA_5: getPath(state, 'ai.currentWeakness', '')
+  };
+}
+
+function characterSheetForPrompt() {
+  return JSON.stringify(state, null, 2);
+}
+
+function setAiModalStatus(message) {
+  document.getElementById('aiModalStatus').textContent = message;
+}
+
+function clearAiPromptOutput() {
+  document.getElementById('aiPromptOutput').value = '';
+  resetCopyAiPromptButton();
+  setAiModalStatus('');
+}
+
+function resetCopyAiPromptButton() {
+  const button = document.getElementById('copyAiPromptBtn');
+  if (!button) return;
+  window.clearTimeout(button._feedbackTimer);
+  button.textContent = 'Copiar prompt';
+  button.classList.remove('copied');
+}
+
+function setCopyAiPromptFeedback(message) {
+  const button = document.getElementById('copyAiPromptBtn');
+  if (!button) return;
+  window.clearTimeout(button._feedbackTimer);
+  button.textContent = message;
+  button.classList.add('copied');
+  button._feedbackTimer = window.setTimeout(resetCopyAiPromptButton, 2200);
+}
+
+function showAiQuestionPanel() {
+  document.getElementById('aiQuestionPanel').hidden = false;
+  document.getElementById('aiResultPanel').hidden = true;
+  setAiModalStatus('');
+}
+
+function showAiResultPanel() {
+  document.getElementById('aiQuestionPanel').hidden = true;
+  document.getElementById('aiResultPanel').hidden = false;
+  setAiModalStatus('');
+}
+
+function extractJsonText(value) {
+  const text = value.trim();
+  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  if (fenced) return fenced[1].trim();
+
+  const firstBrace = text.indexOf('{');
+  const lastBrace = text.lastIndexOf('}');
+  if (firstBrace >= 0 && lastBrace > firstBrace) {
+    return text.slice(firstBrace, lastBrace + 1);
+  }
+
+  return text;
+}
+
+function normalizeAiSuggestion(data) {
+  const suggestion = cloneData(data);
+  delete suggestion._xpAnalysis;
+  return suggestion;
+}
+
+function updateAiPreviewActions() {
+  const isPreviewing = Boolean(aiPreviewState);
+  if (!document.getElementById('saveBtn')) return;
+  document.getElementById('sheet')?.classList.toggle('ai-preview-active', isPreviewing);
+  document.getElementById('saveBtn').hidden = isPreviewing;
+  document.getElementById('githubUploadBtn').hidden = isPreviewing;
+  document.getElementById('commitAiPreviewBtn').hidden = !isPreviewing;
+  document.getElementById('rollbackAiPreviewBtn').hidden = !isPreviewing;
+}
+
+function setAiPreview(data) {
+  aiPreviewState = normalizeAiSuggestion(data);
+  setLevelEditing(false);
+  updateAiPreviewActions();
+  renderFields();
+}
+
+function clearAiPreview() {
+  aiPreviewState = null;
+  updateAiPreviewActions();
+  if (document.querySelector('[data-field]')) renderFields();
+}
+
+function previewAiJson() {
+  try {
+    const text = extractJsonText(document.getElementById('aiJsonInput').value);
+    if (!text) {
+      setAiModalStatus('Cole o JSON retornado pela IA.');
+      return;
+    }
+    const suggestion = JSON.parse(text);
+    setAiPreview(suggestion);
+    closeAiModal();
+    setAutosaveFeedback('Alterações sugeridas em pré-visualização.');
+  } catch (err) {
+    setAiModalStatus('JSON inválido. Cole apenas o JSON retornado pela IA.');
+    console.error('[ai] JSON retornado invalido.', err);
+  }
+}
+
+function commitAiPreview() {
+  if (!aiPreviewState) return;
+  clearState();
+  Object.assign(state, cloneData(aiPreviewState));
+  aiPreviewState = null;
+  setCreationMode(Boolean(state.creation?.mode));
+  updateAiPreviewActions();
+  renderFields();
+  setAutosaveFeedback('Alterações sugeridas aplicadas.');
+}
+
+function rollbackAiPreview() {
+  if (!aiPreviewState) return;
+  aiPreviewState = null;
+  updateAiPreviewActions();
+  renderFields();
+  setAutosaveFeedback('Alterações sugeridas descartadas.');
+}
+
+async function loadAiPromptTemplate() {
+  if (typeof window.aiPromptTemplate === 'string' && window.aiPromptTemplate.trim()) {
+    return window.aiPromptTemplate;
+  }
+  throw new Error('prompt-template-missing');
+}
+
+async function generateAiPrompt(event) {
+  event.preventDefault();
+  setAiModalStatus('Gerando prompt...');
+  storeAiQuestionValues();
+
+  try {
+    let prompt = await loadAiPromptTemplate();
+    const replacements = {
+      ...aiAnswers(),
+      JSON_DA_FICHA_ATUAL: characterSheetForPrompt()
+    };
+
+    Object.entries(replacements).forEach(([key, value]) => {
+      prompt = prompt.replaceAll(`{{${key}}}`, value || 'Não informado.');
+    });
+
+    document.getElementById('aiPromptOutput').value = prompt;
+    setAiModalStatus('Prompt gerado. Respostas armazenadas na ficha.');
+    console.log('[ai] Prompt gerado para chat genérico.');
+  } catch (err) {
+    setAiModalStatus('Não foi possível carregar prompt.js.');
+    console.error('[ai] Falha ao gerar prompt.', err);
+  }
+}
+
+async function copyAiPrompt() {
+  const output = document.getElementById('aiPromptOutput');
+  if (!output.value.trim()) {
+    setAiModalStatus('Gere o prompt antes de copiar.');
+    return;
+  }
+
+  try {
+    await navigator.clipboard.writeText(output.value);
+    setCopyAiPromptFeedback('Copiado');
+    setAiModalStatus('Prompt copiado.');
+  } catch (err) {
+    output.select();
+    setCopyAiPromptFeedback('Selecionado');
+    setAiModalStatus('Selecione e copie o prompt manualmente.');
+  }
+}
+
+function bindAiQuestions() {
+  document.querySelectorAll('[data-ai-question]').forEach(input => {
+    input.addEventListener('input', () => {
+      setPath(state, `ai.${input.dataset.aiQuestion}`, input.value);
+      clearAiPromptOutput();
+    });
+  });
 }
 
 function cleanGitHubPath(path) {
@@ -1025,7 +1386,7 @@ async function uploadJsonToGithub(event) {
   const repo = document.getElementById('githubRepo').value.trim();
   const branch = document.getElementById('githubBranch').value.trim();
   const sheetsPath = cleanGitHubPath(document.getElementById('githubSheetsPath').value || 'fichas');
-  const fileName = currentSheetFile || sheetFileName();
+  const fileName = currentSheetName();
 
   if (!/^[^/\s]+\/[^/\s]+$/.test(repo)) {
     setGithubModalStatus('Informe o repositorio no formato usuario/repositorio.');
@@ -1040,24 +1401,20 @@ async function uploadJsonToGithub(event) {
     await verifyGithubUser(user, token);
     storeGithubSettings({ user, repo, branch, sheetsPath });
 
-    const sheetPath = joinGitHubPath(sheetsPath, fileName);
     setGithubModalStatus('Enviando ficha...');
-    await upsertGitHubFile(
-      repo,
-      branch,
-      sheetPath,
-      JSON.stringify(state, null, 2),
-      `Atualiza ficha ${fileName}`,
-      token
+    const auth = { user, token, repo, branch, sheetsPath };
+    const sheetPath = await uploadSheetToGithub(
+      auth,
+      fileName,
+      sheetJson(),
+      `Atualiza ficha ${fileName}`
     );
-
-    setGithubModalStatus('Atualizando indice de fichas...');
-    await updateGitHubManifest(repo, branch, sheetsPath, fileName, token);
-
-    currentSheetFile = fileName;
+    startAutosave(auth);
     document.getElementById('githubPat').value = '';
     document.getElementById('githubUploadBtn').title = `Ficha enviada para ${repo}/${sheetPath}`;
     setGithubModalStatus(`Ficha enviada para ${repo}/${sheetPath}.`);
+    setAutosaveFeedback('Ficha salva com sucesso.');
+    console.log(`[github] Ficha salva com sucesso em ${repo}/${sheetPath}. Autosave ativado.`);
   } catch (err) {
     setGithubModalStatus(err.message || 'Nao foi possivel enviar para o GitHub.');
   } finally {
@@ -1174,6 +1531,7 @@ function init() {
   bindFields();
   bindNumberSteppers();
   bindLevelEditor();
+  bindAiQuestions();
   populatePriorityControls();
   bindPriorityControls();
   document.getElementById('newCharacterBtn').addEventListener('click', startNewCharacter);
@@ -1183,6 +1541,16 @@ function init() {
   document.getElementById('closeSheetModal').addEventListener('click', closeSheetModal);
   document.getElementById('githubUploadBtn').addEventListener('click', openGithubModal);
   document.getElementById('closeGithubModal').addEventListener('click', closeGithubModal);
+  document.getElementById('aiIntegrationBtn').addEventListener('click', openAiModal);
+  document.getElementById('closeAiModal').addEventListener('click', closeAiModal);
+  document.getElementById('aiForm').addEventListener('submit', generateAiPrompt);
+  document.getElementById('copyAiPromptBtn').addEventListener('click', copyAiPrompt);
+  document.getElementById('receiveAiJsonBtn').addEventListener('click', showAiResultPanel);
+  document.getElementById('backToAiQuestionsBtn').addEventListener('click', showAiQuestionPanel);
+  document.getElementById('previewAiJsonBtn').addEventListener('click', previewAiJson);
+  document.getElementById('commitAiPreviewBtn').addEventListener('click', commitAiPreview);
+  document.getElementById('rollbackAiPreviewBtn').addEventListener('click', rollbackAiPreview);
+  updateAiPreviewActions();
   document.getElementById('githubForm').addEventListener('submit', uploadJsonToGithub);
   document.getElementById('sheetModal').addEventListener('click', e => {
     if (e.target.id === 'sheetModal') closeSheetModal();
@@ -1190,10 +1558,14 @@ function init() {
   document.getElementById('githubModal').addEventListener('click', e => {
     if (e.target.id === 'githubModal') closeGithubModal();
   });
+  document.getElementById('aiModal').addEventListener('click', e => {
+    if (e.target.id === 'aiModal') closeAiModal();
+  });
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape') {
       closeSheetModal();
       closeGithubModal();
+      closeAiModal();
     }
   });
   document.getElementById('saveBtn').addEventListener('click', saveJson);

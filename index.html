@@ -29,6 +29,17 @@
             <path d="m8.6 13.5 6.8 4"></path>
           </svg>
         </button>
+        <button id="commitAiPreviewBtn" class="icon-btn ai-preview-action" type="button" aria-label="Confirmar alterações sugeridas" title="Confirmar alterações sugeridas" hidden>
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M20 6 9 17l-5-5"></path>
+          </svg>
+        </button>
+        <button id="rollbackAiPreviewBtn" class="icon-btn ai-preview-action" type="button" aria-label="Desfazer alterações sugeridas" title="Desfazer alterações sugeridas" hidden>
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M3 7v6h6"></path>
+            <path d="M21 17a9 9 0 0 0-15-6.7L3 13"></path>
+          </svg>
+        </button>
         <!-- <button id="clearBtn" type="button">Limpar</button> -->
       </div>
     </header>
@@ -50,6 +61,13 @@
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path d="m12 20 9-9-8-8-9 9v8h8z"></path>
               <path d="m16 7 1 1"></path>
+            </svg>
+          </button>
+          <button id="aiIntegrationBtn" class="icon-btn ai-integration-btn no-print" type="button" aria-label="Integração de IA" title="Integração de IA">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 3l1.7 5.2L19 10l-5.3 1.8L12 17l-1.7-5.2L5 10l5.3-1.8L12 3z"></path>
+              <path d="M19 16l.7 2.1L22 19l-2.3.9L19 22l-.7-2.1L16 19l2.3-.9L19 16z"></path>
+              <path d="M5 15l.5 1.5L7 17l-1.5.5L5 19l-.5-1.5L3 17l1.5-.5L5 15z"></path>
             </svg>
           </button>
         </span>
@@ -200,6 +218,11 @@
     </section>
   </main>
 
+  <div class="autosave-indicator no-print" id="autosaveIndicator" hidden>
+    <span id="autosaveCountdown">Autosave inativo</span>
+    <span id="autosaveFeedback"></span>
+  </div>
+
   <div class="modal-backdrop no-print" id="sheetModal" hidden>
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="sheetModalTitle">
       <header class="modal-header">
@@ -274,6 +297,64 @@
     </div>
   </div>
 
+  <div class="modal-backdrop no-print" id="aiModal" hidden>
+    <div class="modal ai-modal" role="dialog" aria-modal="true" aria-labelledby="aiModalTitle">
+      <header class="modal-header">
+        <h2 id="aiModalTitle">Integração de IA</h2>
+        <button id="closeAiModal" class="icon-btn modal-close" type="button" aria-label="Fechar" title="Fechar">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M18 6 6 18"></path>
+            <path d="m6 6 12 12"></path>
+          </svg>
+        </button>
+      </header>
+      <form class="ai-form" id="aiForm">
+        <div id="aiQuestionPanel" class="ai-question-panel">
+          <label>Quando você imagina seu personagem resolvendo um problema, o que ele faz primeiro?
+            <em>Usa magia? Conversa? Investiga? Invade sistemas? Parte para ação física? etc.</em>
+            <textarea maxlength="200" data-ai-question="problemApproach"></textarea>
+          </label>
+          <label>Que tipo de cena você gostaria de protagonizar com mais frequência?
+            <em>Confrontos mágicos, Mistérios ocultos, Política entre magos, Exploração da Umbra, Pesquisa e criação de rituais.</em>
+            <textarea maxlength="200" data-ai-question="scenePreference"></textarea>
+          </label>
+          <label>O que seu personagem ainda não consegue fazer hoje, mas você gostaria que conseguisse?
+            <em>Teletransportar-se, Ler pensamentos, Curar aliados, Invocar espíritos, Manipular sorte etc.</em>
+            <textarea maxlength="200" data-ai-question="desiredCapability"></textarea>
+          </label>
+          <label>Seu personagem quer ser mais poderoso ou mais versátil?
+            <em>Mais poderoso → subir Arete e Sphere principal. Mais versátil → abrir novas Esferas, Habilidades e Backgrounds.</em>
+            <select data-ai-question="powerOrVersatility">
+              <option value="Mais poderoso">Mais poderoso</option>
+              <option value="Mais versátil">Mais versátil</option>
+            </select>
+          </label>
+          <label>Qual é a maior fraqueza do personagem atualmente?
+            <em>Falta de poder mágico? Pouca resistência mental? Dificuldade social? Pouco conhecimento? Falta de recursos e contatos? etc.</em>
+            <textarea maxlength="200" data-ai-question="currentWeakness"></textarea>
+          </label>
+          <div class="ai-actions">
+            <button id="generateAiPromptBtn" type="submit">1. Gerar prompt</button>
+            <button id="copyAiPromptBtn" type="button">2. Copiar prompt</button>
+            <button id="receiveAiJsonBtn" type="button">3. Receber JSON</button>
+          </div>
+          <textarea id="aiPromptOutput" class="ai-prompt-output" readonly placeholder="O prompt gerado aparecerá aqui. Ele deve ser enviado para a sua IA de preferência :) O resultado deve ser um JSON, a ser colado na etapa 3."></textarea>
+        </div>
+        <div id="aiResultPanel" class="ai-result-panel" hidden>
+          <label>JSON retornado pela IA
+            <textarea id="aiJsonInput" class="ai-json-input" placeholder="Cole aqui o JSON retornado pela IA."></textarea>
+          </label>
+          <div class="ai-actions">
+            <button id="previewAiJsonBtn" type="button">Pré-visualizar na ficha</button>
+            <button id="backToAiQuestionsBtn" type="button">Voltar às perguntas</button>
+          </div>
+        </div>
+        <p class="modal-status" id="aiModalStatus"></p>
+      </form>
+    </div>
+  </div>
+
+  <script src="prompt.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

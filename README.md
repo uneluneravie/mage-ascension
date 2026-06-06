@@ -30,4 +30,14 @@ O PAT precisa ter permissao de escrita no repositorio. Para tokens fine-grained,
 
 Durante o upload, o app cria ou atualiza `fichas/nome_da_ficha.json` e tambem atualiza `fichas/index.json` para que a ficha apareca no modal de carregamento.
 
+Depois do primeiro envio manual para o GitHub, o app ativa autosave a cada 15 minutos enquanto a pagina estiver aberta. O PAT fica apenas em memoria nessa sessao e o envio automatico so acontece quando houver mudanca real no JSON da ficha.
+
+## Prompt de IA
+
+O botao de integracao de IA ao lado de experiencia/freebies abre um modal com cinco perguntas sobre a evolucao do personagem. Ao clicar em `Gerar prompt`, o app usa o template carregado por `prompt.js`, substitui os campos `{{RESPOSTA_1}}` a `{{RESPOSTA_5}}` e inclui `{{JSON_DA_FICHA_ATUAL}}` com a ficha atual, pronta para copiar em um chat de IA generico.
+
+As respostas ficam armazenadas em `ai` dentro dos dados da ficha e so sao persistidas quando a ficha for salva localmente ou enviada para o GitHub.
+
+Para funcionar no GitHub Pages, mantenha `prompt.js` publicado na raiz do projeto junto com `index.html`. O arquivo deve definir `window.aiPromptTemplate`.
+
 Nao usa frameworks, build ou dependencias externas.
