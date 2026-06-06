@@ -1,1 +1,26 @@
-{}
+{
+  "creation": {
+    "mode": false,
+    "attributePriorities": {
+      "primary": "physical",
+      "secondary": "social",
+      "tertiary": "mental"
+    },
+    "abilityPriorities": {
+      "primary": "talents",
+      "secondary": "skills",
+      "tertiary": "knowledges"
+    }
+  },
+  "identity": {
+    "name": "mago",
+    "experience": 0
+  },
+  "health": {
+    "level": "healthy"
+  },
+  "advantages": {
+    "quintessence": 0,
+    "paradox": 0
+  }
+}
