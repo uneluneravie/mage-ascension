@@ -15,10 +15,12 @@
   "identity": {
     "name": "mago lari",
     "experience": 50,
-    "player": "lari"
+    "player": "lari",
+    "lineage": "linhagem teste"
   },
   "health": {
-    "level": "healthy"
+    "level": "healthy",
+    "damage": []
   },
   "attributes": {
     "physical": {
