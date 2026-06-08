@@ -1,0 +1,22 @@
+{
+  "name": "linhagem teste",
+  "spheres": {
+    "fate": 2,
+    "space": 0,
+    "spirit": 0,
+    "forces": 0,
+    "matter": 0,
+    "mind": 0,
+    "death": 0,
+    "prime": 0,
+    "time": 0,
+    "life": 0
+  },
+  "members": [
+    {
+      "name": "mago lari",
+      "chronicle": "Idade Média",
+      "dead": true
+    }
+  ]
+}
