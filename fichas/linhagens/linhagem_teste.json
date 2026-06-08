@@ -1,7 +1,19 @@
 {
   "name": "linhagem teste",
   "spheres": {
-    "fate": 2,
+    "fate": 0,
+    "space": 0,
+    "spirit": 0,
+    "forces": 0,
+    "matter": 0,
+    "mind": 0,
+    "death": 0,
+    "prime": 0,
+    "time": 0,
+    "life": 0
+  },
+  "sphereExperience": {
+    "fate": 0,
     "space": 0,
     "spirit": 0,
     "forces": 0,
@@ -14,8 +26,15 @@
   },
   "members": [
     {
+      "name": "Teste",
+      "chronicle": "Idade Média",
+      "status": "alive",
+      "dead": false
+    },
+    {
       "name": "mago lari",
       "chronicle": "Idade Média",
+      "status": "alive",
       "dead": false
     }
   ]
