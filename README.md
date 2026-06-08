@@ -16,7 +16,7 @@ Para fichas novas, o arquivo e criado como `nome_do_personagem.json`, em snake_c
 
 ## Criacao de personagem
 
-Ao criar um personagem novo, o campo de experiencia vira `Freebies` e comeca em 15. O app habilita os controles de prioridades de Atributos e Habilidades, aplica os pontos iniciais de Atributos, Arete e Saude, e calcula custos de compra por prioridade, pontos iniciais e Freebies.
+Ao criar um personagem novo, o campo de experiencia vira `Freebies` e comeca em 15. O app habilita os controles de prioridades de Atributos e Habilidades, aplica os pontos iniciais de Atributos, Arcana e Saude, e calcula custos de compra por prioridade, pontos iniciais e Freebies.
 
 Backgrounds usam pontos de bolinha e tambem entram no calculo de criacao.
 

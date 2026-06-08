@@ -35,7 +35,7 @@ Exemplos:
 * Ocultismo 2 → 3
     custo = 2 * 3 = 6
 
-* Arete 2 → 3
+* Arcana 2 → 3
     custo = 4 * 3 = 12
 
 * Forces 2 → 3
@@ -50,7 +50,7 @@ Multiplicadores:
     "attributes": 5,
     "abilities": 2,
     "spheres": 7,
-    "advantages.arete": 4,
+    "advantages.arcana": 4,
     "advantages.willpower": 1
 }
 \`\`\`
@@ -63,7 +63,7 @@ Se um atributo subir mais de um nível, cada etapa deve ser comprada separadamen
 
 Exemplo:
 
-Arete 2 → 4
+Arcana 2 → 4
 
 Passo 1:
 2 → 3
@@ -122,7 +122,7 @@ Exemplo:
         "remainingXP": z,
         "purchases": [
             {
-                "field": "advantages.arete",
+                "field": "advantages.arcana",
                 "from": 2,
                 "to": 3,
                 "cost": 12
@@ -169,7 +169,7 @@ Representam o tipo de magia que o personagem domina.
 
 ## Vantagens
 
-* advantages.arete
+* advantages.arcana
     Capacidade geral de realizar magia.
     Quanto maior, mais poderoso e confiável é o mago.
 
@@ -257,7 +257,7 @@ Quando o jogador desejar:
 
 Priorize:
 
-* advantages.arete
+* advantages.arcana
 * esfera principal relacionada ao objetivo
 
 ## Mais versatilidade

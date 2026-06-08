@@ -1,4 +1,10 @@
 const state = {};
+const lineageState = {
+  name: '',
+  spheres: {},
+  sphereExperience: {},
+  members: []
+};
 const healthLevels = [
   { value: 'healthy', label: 'Saudável', dicePenalty: 0 },
   { value: 'bruised', label: 'Escoriado', dicePenalty: 0 },
@@ -9,6 +15,33 @@ const healthLevels = [
   { value: 'crippled', label: 'Aleijado', dicePenalty: 5 },
   { value: 'incapacitated', label: 'Incapacitado', blocked: true }
 ];
+const maxHealthBoxes = 7;
+const damageTypes = [
+  {
+    key: 'bashing',
+    label: 'Contusão',
+    symbol: '/',
+    examples: ['soco', 'queda leve', 'paulada', 'cansaço extremo']
+  },
+  {
+    key: 'lethal',
+    label: 'Letal',
+    symbol: 'X',
+    examples: ['faca', 'espada', 'mordida', 'tiro']
+  },
+  {
+    key: 'aggravated',
+    label: 'Agravado',
+    symbol: '*',
+    examples: ['fogo sobrenatural', 'ataques de monstros', 'magia extremamente destrutiva', 'certas maldições']
+  }
+];
+const damageSeverity = {
+  '*': 3,
+  X: 2,
+  '/': 1
+};
+const chronicleOptions = ['Idade Média', 'Urbana', 'Futurista'];
 const fieldDescriptions = {
   'attributes.strength': 'Força física bruta, usada para levantar, empurrar, quebrar e causar dano corporal.',
   'attributes.dexterity': 'Coordenação, precisão e reflexos em ações físicas.',
@@ -64,7 +97,7 @@ const fieldDescriptions = {
   'spheres.time': 'Passado, futuro, duração e fluxo temporal.',
   'spheres.life': 'Organismos vivos, cura, mutação e biologia.',
 
-  'advantages.arete': 'Capacidade de impor vontade à realidade e realizar magia.',
+  'advantages.arcana': 'Capacidade de impor vontade à realidade e realizar magia.',
   'advantages.willpower': 'Determinação mental usada para resistir ou superar desafios.',
   'advantages.quintessence': 'Energia mágica primordial usada para alimentar efeitos.',
   'advantages.paradox': 'Acúmulo da reação da realidade contra magia impossível.',
@@ -97,7 +130,7 @@ const xpMultipliers = {
   abilities: 2,
   backgrounds: 1,
   spheres: 7,
-  'advantages.arete': 8,
+  'advantages.arcana': 8,
   'advantages.willpower': 1
 };
 const creationCosts = {
@@ -105,7 +138,7 @@ const creationCosts = {
   abilities: 2,
   backgrounds: 1,
   spheres: 7,
-  'advantages.arete': 4,
+  'advantages.arcana': 4,
   'advantages.willpower': 1
 };
 const creationGroups = {
@@ -148,6 +181,7 @@ let autosaveNextAt = 0;
 let autosaveLastSavedJson = '';
 let autosaveAuth = null;
 let aiPreviewState = null;
+let pendingLineageDeathId = null;
 
 function setPath(obj, path, value) {
   const keys = path.split('.');
@@ -244,12 +278,12 @@ function priorityPoolRemaining(path) {
   return 0;
 }
 
-function areteSpherePoolSpent() {
-  return Math.max(0, Number(getPath(state, 'advantages.arete', 1)) - 1) + sumPaths(spherePaths) + Number(getPath(state, 'advantages.willpower', 0));
+function arcanaSpherePoolSpent() {
+  return Math.max(0, Number(getPath(state, 'advantages.arcana', 1)) - 1) + sumPaths(spherePaths) + Number(getPath(state, 'advantages.willpower', 0));
 }
 
-function areteSpherePoolRemaining() {
-  return Math.max(0, 6 - areteSpherePoolSpent());
+function arcanaSpherePoolRemaining() {
+  return Math.max(0, 6 - arcanaSpherePoolSpent());
 }
 
 function backgroundPoolRemaining() {
@@ -282,10 +316,10 @@ function creationFreebieSpend(overrides = {}) {
 
   total += Math.max(0, backgroundPaths.reduce((sum, path) => sum + valueOf(path), 0) - 7) * creationCosts.backgrounds;
 
-  const arete = valueOf('advantages.arete');
+  const arcana = valueOf('advantages.arcana');
   const sharedPoolItems = [];
-  for (let level = 2; level <= arete; level++) {
-    sharedPoolItems.push(level <= 3 ? creationCosts['advantages.arete'] : creationCosts['advantages.arete']);
+  for (let level = 2; level <= arcana; level++) {
+    sharedPoolItems.push(level <= 3 ? creationCosts['advantages.arcana'] : creationCosts['advantages.arcana']);
   }
   spherePaths.forEach(path => {
     for (let i = 0; i < valueOf(path); i++) sharedPoolItems.push(creationCosts.spheres);
@@ -298,14 +332,14 @@ function creationFreebieSpend(overrides = {}) {
 }
 
 function creationLevelLimit(path) {
-  if (path.startsWith('spheres.')) return Number(getPath(state, 'advantages.arete', 1));
+  if (path.startsWith('spheres.')) return Number(getPath(state, 'advantages.arcana', 1));
   return Number(document.querySelector(`[data-dots="${path}"]`)?.dataset.max || 5);
 }
 
 function canSetCreationLevel(path, target) {
   if (!creationMode) return true;
   if (target > creationLevelLimit(path)) return false;
-  if (path === 'advantages.arete') {
+  if (path === 'advantages.arcana') {
     return target >= Math.max(0, ...spherePaths.map(spherePath => Number(getPath(state, spherePath, 0))));
   }
   return true;
@@ -510,25 +544,101 @@ function renderDots(container) {
 }
 
 function makeHealth() {
-  const select = document.getElementById('healthLevel');
-  select.innerHTML = '';
-  healthLevels.forEach(level => {
-    const option = document.createElement('option');
-    option.value = level.value;
-    option.textContent = level.label;
-    select.appendChild(option);
+  const buttons = document.getElementById('healthDamageButtons');
+  const boxes = document.getElementById('healthBoxes');
+  buttons.innerHTML = '';
+  boxes.innerHTML = '';
+
+  damageTypes.forEach(type => {
+    const group = document.createElement('span');
+    group.className = 'health-type-actions';
+    const label = document.createElement('span');
+    label.className = 'health-type-label';
+    label.title = `${type.label}\nExemplos: ${type.examples.join(', ')}`;
+    const symbol = document.createElement('span');
+    symbol.className = 'health-type-symbol';
+    symbol.textContent = type.symbol;
+    label.append(symbol, document.createTextNode(type.label));
+
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'health-damage-btn';
+    button.setAttribute('aria-label', `Aplicar dano ${type.label}`);
+    button.appendChild(healthIcon('damage'));
+    button.addEventListener('click', () => applyHealthDamage(type.symbol));
+
+    const healButton = document.createElement('button');
+    healButton.type = 'button';
+    healButton.className = 'health-heal-btn';
+    healButton.setAttribute('aria-label', `Curar dano ${type.label}`);
+    healButton.dataset.healSymbol = type.symbol;
+    healButton.appendChild(healthIcon('heal'));
+    healButton.addEventListener('click', () => healHealthDamage(type.symbol));
+
+    group.append(label, button, healButton);
+    buttons.appendChild(group);
   });
-  select.addEventListener('change', updateHealthPenalty);
-  updateHealthPenalty();
+
+  for (let i = 0; i < maxHealthBoxes; i++) {
+    const box = document.createElement('span');
+    box.className = 'health-box';
+    box.setAttribute('role', 'checkbox');
+    box.setAttribute('aria-readonly', 'true');
+    box.setAttribute('aria-checked', 'false');
+    boxes.appendChild(box);
+  }
+
+  renderHealthDamage();
 }
 
-function updateHealthPenalty() {
-  const level = effectiveValue('health.level', healthLevels[0].value);
-  const selected = healthLevels.find(item => item.value === level) || healthLevels[0];
-  const penalty = document.getElementById('healthPenalty');
+function healthIcon(kind) {
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('aria-hidden', 'true');
 
-  if (selected.blocked) {
-    penalty.textContent = 'impossibilitado';
+  if (kind === 'heal') {
+    const plus = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    plus.setAttribute('d', 'M9 3h6v6h6v6h-6v6H9v-6H3V9h6V3z');
+    svg.appendChild(plus);
+    return svg;
+  }
+
+  const burst = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  burst.setAttribute('d', 'M12 2l2.1 5.2L19 4l-1.3 5.8L23 12l-5.3 2.2L19 20l-4.9-3.2L12 22l-2.1-5.2L5 20l1.3-5.8L1 12l5.3-2.2L5 4l4.9 3.2L12 2z');
+  svg.appendChild(burst);
+  return svg;
+}
+
+
+function legacyHealthDamage() {
+  const level = getPath(state, 'health.level', healthLevels[0].value);
+  const count = Math.max(0, healthLevels.findIndex(item => item.value === level));
+  return Array.from({ length: Math.min(count, maxHealthBoxes) }, () => '/');
+}
+
+function normalizedHealthDamage(source = state) {
+  const damage = getPath(source, 'health.damage', null);
+  if (!Array.isArray(damage)) return source === state ? legacyHealthDamage() : [];
+  return damage
+    .filter(symbol => damageTypes.some(type => type.symbol === symbol))
+    .sort((a, b) => damageSeverity[b] - damageSeverity[a])
+    .slice(0, maxHealthBoxes);
+}
+
+function currentHealthLevel(damage) {
+  return healthLevels[Math.min(damage.length, healthLevels.length - 1)] || healthLevels[0];
+}
+
+function healthStatusText(level) {
+  return level.label;
+}
+
+function renderHealthPenalty(level) {
+  const penalty = document.getElementById('healthPenalty');
+  if (!penalty) return;
+
+  if (level.blocked) {
+    penalty.textContent = '☠';
     penalty.classList.add('is-blocked');
     return;
   }
@@ -544,13 +654,70 @@ function updateHealthPenalty() {
       className: 'health-dice'
     })
   );
-  penalty.querySelector('span').textContent = selected.dicePenalty;
+  penalty.querySelector('span').textContent = level.dicePenalty;
 }
 
-function ensureHealthLevel() {
-  if (!getPath(state, 'health.level', '')) {
-    setPath(state, 'health.level', healthLevels[0].value);
+function applyHealthDamage(symbol) {
+  if (aiPreviewState) {
+    renderFields();
+    return;
   }
+
+  const damage = normalizedHealthDamage();
+  if (damage.length >= maxHealthBoxes) return;
+  damage.push(symbol);
+  damage.sort((a, b) => damageSeverity[b] - damageSeverity[a]);
+  setPath(state, 'health.damage', damage);
+  setPath(state, 'health.level', currentHealthLevel(damage).value);
+  renderHealthDamage();
+}
+
+function healHealthDamage(symbol) {
+  if (aiPreviewState) {
+    renderFields();
+    return;
+  }
+
+  const damage = normalizedHealthDamage();
+  const index = damage.indexOf(symbol);
+  if (index < 0) return;
+  damage.splice(index, 1);
+  damage.sort((a, b) => damageSeverity[b] - damageSeverity[a]);
+  setPath(state, 'health.damage', damage);
+  setPath(state, 'health.level', currentHealthLevel(damage).value);
+  renderHealthDamage();
+}
+
+function renderHealthDamage() {
+  const damage = aiPreviewState && hasPath(aiPreviewState, 'health.damage')
+    ? normalizedHealthDamage(aiPreviewState)
+    : normalizedHealthDamage();
+  const isSuggested = isAiSuggestionChanged('health.damage');
+  const control = document.querySelector('.health-control');
+  const status = document.getElementById('healthStatus');
+  const level = currentHealthLevel(damage);
+
+  control?.classList.toggle('ai-suggested', isSuggested);
+  document.querySelectorAll('.health-damage-btn').forEach(button => {
+    button.disabled = Boolean(aiPreviewState) || damage.length >= maxHealthBoxes;
+  });
+  document.querySelectorAll('.health-heal-btn').forEach(button => {
+    button.disabled = Boolean(aiPreviewState) || !damage.includes(button.dataset.healSymbol);
+  });
+  if (status) status.textContent = healthStatusText(level);
+  renderHealthPenalty(level);
+  document.querySelectorAll('.health-box').forEach((box, idx) => {
+    const symbol = damage[idx] || '';
+    box.textContent = symbol;
+    box.classList.toggle('is-filled', Boolean(symbol));
+    box.setAttribute('aria-checked', symbol ? 'true' : 'false');
+  });
+}
+
+function ensureHealthDamage() {
+  const damage = normalizedHealthDamage();
+  setPath(state, 'health.damage', damage);
+  setPath(state, 'health.level', currentHealthLevel(damage).value);
 }
 
 function bindFields() {
@@ -568,9 +735,6 @@ function bindFields() {
       setPath(state, e.target.dataset.field, value);
       if (e.target.dataset.field === 'identity.name') {
         e.target.setCustomValidity('');
-      }
-      if (e.target.dataset.field === 'health.level') {
-        updateHealthPenalty();
       }
       if (e.target.dataset.field === 'identity.experience') {
         setExperienceError('');
@@ -612,7 +776,7 @@ function ensureNumberDefaults() {
 
 function renderFields() {
   document.querySelectorAll('[data-field]').forEach(el => {
-    const fallback = el.dataset.field === 'health.level' ? healthLevels[0].value : el.dataset.numberDefault || '';
+    const fallback = el.dataset.numberDefault || '';
     el.value = effectiveValue(el.dataset.field, fallback);
     el.classList.toggle('ai-suggested-field', isAiSuggestionChanged(el.dataset.field));
     el.disabled = Boolean(aiPreviewState);
@@ -621,9 +785,313 @@ function renderFields() {
     button.disabled = Boolean(aiPreviewState);
   });
   document.querySelectorAll('[data-dots]').forEach(renderDots);
-  updateHealthPenalty();
+  renderHealthDamage();
   updateAllDotCosts();
   renderCreationSummary();
+}
+
+function clearLineageState() {
+  lineageState.name = '';
+  lineageState.spheres = {};
+  lineageState.sphereExperience = {};
+  lineageState.members = [];
+  pendingLineageDeathId = null;
+}
+
+function lineageName() {
+  return (lineageState.name || getPath(state, 'identity.lineage', '')).trim();
+}
+
+function lineageFileName() {
+  return `${snakeCase(lineageName())}.json`;
+}
+
+function lineageRelativePath() {
+  return `linhagens/${lineageFileName()}`;
+}
+
+function lineageHasData() {
+  return Boolean(
+    lineageName()
+    || Object.values(lineageState.spheres).some(value => Number(value) > 0)
+    || lineageState.members.some(member => member.name || member.chronicle || member.dead)
+  );
+}
+
+function ensureLineageMember() {
+  if (!lineageState.members.length) addLineageMember(false);
+}
+
+function addLineageMember(render = true) {
+  lineageState.members.push({
+    id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+    name: '',
+    chronicle: '',
+    dead: false
+  });
+  if (render) renderLineageMembers();
+}
+
+function ratingToXp(rating) {
+  const value = Math.max(0, Number(rating) || 0);
+  const full = Math.floor(value);
+  const fraction = value - full;
+  let total = 0;
+  for (let level = 1; level <= full; level++) total += level * 7;
+  if (fraction > 0) total += fraction * (full + 1) * 7;
+  return total;
+}
+
+function legacyLineageRatingToXp(rating) {
+  const value = Math.max(0, Number(rating) || 0);
+  const full = Math.floor(value);
+  const fraction = value - full;
+  let total = 0;
+  for (let level = 1; level <= full; level++) total += level * 7;
+  if (fraction > 0) total += value * 7;
+  return total;
+}
+
+function xpToRating(xp) {
+  let remaining = Math.max(0, Number(xp) || 0) / 7;
+  let level = 0;
+
+  while (remaining >= level + 1) {
+    level += 1;
+    remaining -= level;
+  }
+
+  if (!remaining) return level;
+  return level + remaining / (level + 1);
+}
+
+function lineageSphereXp(key) {
+  if (Object.prototype.hasOwnProperty.call(lineageState.sphereExperience, key)) {
+    return Number(lineageState.sphereExperience[key]) || 0;
+  }
+  return legacyLineageRatingToXp(lineageState.spheres[key] || 0);
+}
+
+function roundedRating(value) {
+  return Math.round((Number(value) || 0) * 100) / 100;
+}
+
+function syncLineageSpheresFromExperience() {
+  spherePaths.forEach(path => {
+    const key = path.split('.')[1];
+    if (Object.prototype.hasOwnProperty.call(lineageState.sphereExperience, key)) {
+      lineageState.spheres[key] = roundedRating(xpToRating(lineageState.sphereExperience[key]));
+    }
+  });
+}
+
+function creationSphereRating(characterData, key) {
+  const current = Number(characterData?.spheres?.[key] || 0);
+  const snapshotValue = characterData?.creationSnapshot?.spheres?.[key];
+  if (snapshotValue !== undefined && snapshotValue !== null) {
+    return Math.min(current, Math.max(0, Number(snapshotValue) || 0));
+  }
+  return current > 0 ? 1 : 0;
+}
+
+function characterSphereDeathXp(characterData, key) {
+  const current = Number(characterData?.spheres?.[key] || 0);
+  const createdWith = creationSphereRating(characterData, key);
+  return Math.max(0, ratingToXp(current) - ratingToXp(createdWith));
+}
+
+function absorbCharacterSpheresIntoLineage(characterData) {
+  spherePaths.forEach(path => {
+    const key = path.split('.')[1];
+    const gainedXp = characterSphereDeathXp(characterData, key) / 2;
+    if (!gainedXp) return;
+
+    const totalXp = lineageSphereXp(key) + gainedXp;
+    lineageState.sphereExperience[key] = totalXp;
+    lineageState.spheres[key] = roundedRating(xpToRating(totalXp));
+  });
+}
+
+function githubSheetsRawBase() {
+  const settings = getGithubSettings();
+  const repo = settings.repo || defaultGithubRepo;
+  const branch = settings.branch || 'main';
+  const sheetsPath = cleanGitHubPath(settings.sheetsPath || 'fichas');
+  return `https://raw.githubusercontent.com/${repo}/${encodeURIComponent(branch)}/${sheetsPath.split('/').map(encodeURIComponent).join('/')}`;
+}
+
+function lineageMemberSheetFileName(member) {
+  const name = (member?.name || '').trim();
+  if (!name) throw new Error('member-name-missing');
+  return /\.json$/i.test(name) ? name : `${snakeCase(name)}.json`;
+}
+
+async function fetchLineageMemberSheet(member) {
+  const fileName = lineageMemberSheetFileName(member);
+  const response = await fetch(`${githubSheetsRawBase()}/${fileName.split('/').map(encodeURIComponent).join('/')}?v=${Date.now()}`);
+  if (!response.ok) throw new Error('member-sheet-not-found');
+  return response.json();
+}
+
+function makeLineageDots(container) {
+  const key = container.dataset.lineageDots;
+  const label = container.dataset.label;
+  const path = `spheres.${key}`;
+  const description = fieldDescriptions[path] || '';
+  const symbol = sphereSymbols[path] || '';
+  container.className = 'lineage-dot-row';
+  container.innerHTML = '<span class="dot-label"></span><span class="dots"></span>';
+
+  const labelElement = container.querySelector('.dot-label');
+  if (symbol) {
+    const symbolElement = document.createElement('span');
+    symbolElement.className = 'sphere-symbol';
+    symbolElement.textContent = symbol;
+    labelElement.append(symbolElement, document.createTextNode(label));
+  } else {
+    labelElement.textContent = label;
+  }
+  if (description) labelElement.title = description;
+
+  const dots = container.querySelector('.dots');
+  for (let i = 1; i <= 5; i++) {
+    const dot = document.createElement('button');
+    dot.type = 'button';
+    dot.className = 'dot';
+    dot.title = `${label}: ${i}`;
+    dot.setAttribute('aria-label', `${label}: ${i}`);
+    dot.disabled = true;
+    dots.appendChild(dot);
+  }
+  renderLineageDots(container);
+}
+
+function renderLineageDots(container) {
+  const value = Number(lineageState.spheres[container.dataset.lineageDots] || 0);
+  container.querySelectorAll('.dot').forEach((dot, idx) => {
+    const filled = idx + 1 <= value;
+    const partial = Math.max(0, Math.min(1, value - idx));
+    dot.classList.toggle('filled', filled);
+    if (!filled && partial > 0) {
+      dot.style.background = `linear-gradient(to right, var(--gold) ${partial * 100}%, transparent ${partial * 100}%)`;
+    } else {
+      dot.style.background = '';
+    }
+  });
+}
+
+function renderLineageMembers() {
+  const list = document.getElementById('lineageMembers');
+  if (!list) return;
+  list.innerHTML = '';
+  ensureLineageMember();
+
+  lineageState.members.forEach(member => {
+    const row = document.createElement('div');
+    row.className = 'lineage-member-row';
+    row.dataset.memberId = member.id;
+
+    const nameWrap = document.createElement('span');
+    nameWrap.className = 'lineage-member-name';
+    const nameInput = document.createElement('input');
+    nameInput.placeholder = 'Nome';
+    nameInput.value = member.name || '';
+    nameInput.addEventListener('input', () => {
+      member.name = nameInput.value;
+    });
+    nameWrap.appendChild(nameInput);
+    if (member.dead) {
+      const memoriam = document.createElement('span');
+      memoriam.className = 'lineage-memoriam';
+      memoriam.textContent = 'in memorium';
+      nameWrap.appendChild(memoriam);
+    }
+
+    const chronicleInput = document.createElement('select');
+    chronicleOptions.forEach(optionValue => {
+      const option = document.createElement('option');
+      option.value = optionValue;
+      option.textContent = optionValue === 'Urbana' ? 'Urbano' : optionValue;
+      chronicleInput.appendChild(option);
+    });
+    chronicleInput.value = chronicleOptions.includes(member.chronicle) ? member.chronicle : chronicleOptions[0];
+    member.chronicle = chronicleInput.value;
+    chronicleInput.addEventListener('change', () => {
+      member.chronicle = chronicleInput.value;
+    });
+
+    const deathButton = document.createElement('button');
+    deathButton.type = 'button';
+    deathButton.className = 'lineage-death-btn no-print';
+    deathButton.textContent = '☠';
+    deathButton.title = 'Marcar morte';
+    deathButton.setAttribute('aria-label', `Marcar morte de ${member.name || 'personagem'}`);
+    deathButton.disabled = Boolean(member.dead);
+    deathButton.addEventListener('click', () => openLineageDeathModal(member.id));
+
+    row.append(nameWrap, chronicleInput, deathButton);
+    list.appendChild(row);
+  });
+}
+
+function renderLineage() {
+  const nameInput = document.getElementById('lineageNameInput');
+  lineageState.name = getPath(state, 'identity.lineage', lineageState.name || '');
+  if (nameInput) nameInput.value = lineageState.name;
+  document.querySelectorAll('[data-lineage-dots]').forEach(renderLineageDots);
+  renderLineageMembers();
+}
+
+function bindLineage() {
+  document.querySelectorAll('[data-lineage-dots]').forEach(makeLineageDots);
+  document.getElementById('lineageNameInput')?.addEventListener('input', event => {
+    lineageState.name = event.target.value;
+    setPath(state, 'identity.lineage', lineageState.name);
+    event.target.setCustomValidity('');
+  });
+  document.getElementById('addLineageMemberBtn')?.addEventListener('click', () => addLineageMember());
+  document.getElementById('closeLineageDeathModal')?.addEventListener('click', closeLineageDeathModal);
+  document.getElementById('cancelLineageDeathBtn')?.addEventListener('click', closeLineageDeathModal);
+  document.getElementById('confirmLineageDeathBtn')?.addEventListener('click', confirmLineageDeath);
+  document.getElementById('lineageDeathModal')?.addEventListener('click', event => {
+    if (event.target.id === 'lineageDeathModal') closeLineageDeathModal();
+  });
+  renderLineage();
+}
+
+function openLineageDeathModal(memberId) {
+  pendingLineageDeathId = memberId;
+  document.getElementById('lineageDeathModal').hidden = false;
+}
+
+function closeLineageDeathModal() {
+  pendingLineageDeathId = null;
+  document.getElementById('lineageDeathModal').hidden = true;
+}
+
+async function confirmLineageDeath() {
+  const member = lineageState.members.find(item => item.id === pendingLineageDeathId);
+  if (!member) {
+    closeLineageDeathModal();
+    return;
+  }
+
+  const button = document.getElementById('confirmLineageDeathBtn');
+  if (button) button.disabled = true;
+
+  try {
+    const characterData = await fetchLineageMemberSheet(member);
+    absorbCharacterSpheresIntoLineage(characterData);
+    member.dead = true;
+    closeLineageDeathModal();
+    renderLineageMembers();
+    document.querySelectorAll('[data-lineage-dots]').forEach(renderLineageDots);
+  } catch (err) {
+    console.error('[lineage] Nao foi possivel absorver as esferas do personagem.', err);
+    alert('Nao foi possivel carregar a ficha desse personagem no GitHub. A morte nao foi confirmada.');
+  } finally {
+    if (button) button.disabled = false;
+  }
 }
 
 function clearState() {
@@ -654,6 +1122,18 @@ function requireCharacterName(onError = () => {}) {
   return false;
 }
 
+function requireLineageName(onError = () => {}) {
+  if (!lineageHasData() || lineageName()) return true;
+
+  const nameInput = document.getElementById('lineageNameInput');
+  const message = 'Preencha o nome da linhagem antes de salvar seus dados.';
+  nameInput?.setCustomValidity(message);
+  nameInput?.reportValidity();
+  nameInput?.focus();
+  onError(message);
+  return false;
+}
+
 function snakeCase(value) {
   return value
     .normalize('NFD')
@@ -675,10 +1155,53 @@ function sheetUrl(fileName) {
 function applySheetData(data, fileName = '') {
   clearAiPreview();
   clearState();
+  clearLineageState();
   Object.assign(state, data);
+  if (data.lineage && typeof data.lineage === 'object') {
+    lineageState.name = data.lineage.name || data.identity?.lineage || '';
+    lineageState.spheres = { ...(data.lineage.spheres || {}) };
+    lineageState.sphereExperience = { ...(data.lineage.sphereExperience || {}) };
+    syncLineageSpheresFromExperience();
+    lineageState.members = Array.isArray(data.lineage.members) ? data.lineage.members : [];
+    delete state.lineage;
+  }
   currentSheetFile = fileName;
   setCreationMode(Boolean(data.creation?.mode));
   renderFields();
+  renderLineage();
+}
+
+function applyLineageData(data) {
+  clearLineageState();
+  lineageState.name = data.name || lineageName();
+  lineageState.spheres = { ...(data.spheres || {}) };
+  lineageState.sphereExperience = { ...(data.sphereExperience || {}) };
+  syncLineageSpheresFromExperience();
+  lineageState.members = Array.isArray(data.members)
+    ? data.members.map(member => ({
+      id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      name: member.name || '',
+      chronicle: member.chronicle || '',
+      dead: Boolean(member.dead || member.status === 'dead' || member.inMemoriam)
+    }))
+    : [];
+  if (lineageState.name) setPath(state, 'identity.lineage', lineageState.name);
+  renderLineage();
+}
+
+async function loadLineageFromUrl(baseUrl) {
+  if (!lineageName()) return;
+  try {
+    const response = await fetch(`${baseUrl}/linhagens/${lineageFileName().split('/').map(encodeURIComponent).join('/')}?v=${Date.now()}`);
+    if (!response.ok) return;
+    applyLineageData(await response.json());
+  } catch (err) {
+    console.warn('[lineage] Nao foi possivel carregar a linhagem.', err);
+  }
+}
+
+async function loadLineageFromGithub() {
+  await loadLineageFromUrl(githubSheetsRawBase());
 }
 
 function normalizeSheetEntry(entry) {
@@ -698,7 +1221,58 @@ function setGithubModalStatus(message) {
 }
 
 function sheetJson() {
+  ensureHealthDamage();
+  ensureCreationSnapshot();
+  if (lineageName()) setPath(state, 'identity.lineage', lineageName());
+  delete state.lineage;
   return JSON.stringify(state, null, 2);
+}
+
+function creationSnapshotData() {
+  return {
+    capturedAt: new Date().toISOString(),
+    identity: cloneData(getPath(state, 'identity', {})),
+    attributes: cloneData(getPath(state, 'attributes', {})),
+    abilities: cloneData(getPath(state, 'abilities', {})),
+    spheres: cloneData(getPath(state, 'spheres', {})),
+    advantages: cloneData(getPath(state, 'advantages', {})),
+    backgrounds: cloneData(getPath(state, 'backgrounds', {})),
+    creation: cloneData(getPath(state, 'creation', {}))
+  };
+}
+
+function ensureCreationSnapshot() {
+  if (!state.creationSnapshot || state.creation?.mode) {
+    state.creationSnapshot = creationSnapshotData();
+  }
+}
+
+function lineageData() {
+  const sphereExperience = Object.fromEntries(spherePaths.map(path => {
+    const key = path.split('.')[1];
+    return [key, lineageSphereXp(key)];
+  }));
+
+  return {
+    name: lineageName(),
+    spheres: Object.fromEntries(spherePaths.map(path => {
+      const key = path.split('.')[1];
+      return [key, Number(lineageState.spheres[key] || 0)];
+    })),
+    sphereExperience,
+    members: lineageState.members
+      .filter(member => member.name || member.chronicle || member.dead)
+      .map(member => ({
+        name: member.name || '',
+        chronicle: member.chronicle || '',
+        status: member.dead ? 'dead' : 'alive',
+        dead: Boolean(member.dead)
+      }))
+  };
+}
+
+function lineageJson() {
+  return JSON.stringify(lineageData(), null, 2);
 }
 
 function currentSheetName() {
@@ -754,18 +1328,26 @@ async function uploadSheetToGithub({ repo, branch, sheetsPath, token }, fileName
   await upsertGitHubFile(repo, branch, sheetPath, content, message, token);
   await updateGitHubManifest(repo, branch, sheetsPath, fileName, token);
   currentSheetFile = fileName;
-  autosaveLastSavedJson = content;
   return sheetPath;
+}
+
+async function uploadLineageToGithub(auth, message) {
+  if (!lineageHasData() || !lineageName()) return '';
+  const lineagePath = joinGitHubPath(auth.sheetsPath, lineageRelativePath());
+  await upsertGitHubFile(auth.repo, auth.branch, lineagePath, lineageJson(), message, auth.token);
+  return lineagePath;
 }
 
 async function runAutosave() {
   if (!autosaveAuth) return;
 
   try {
-    ensureHealthLevel();
+    ensureHealthDamage();
     ensureNumberDefaults();
     const content = sheetJson();
-    if (content === autosaveLastSavedJson) {
+    const lineageContent = lineageHasData() && lineageName() ? lineageJson() : '';
+    const autosaveContent = `${content}\n---lineage---\n${lineageContent}`;
+    if (autosaveContent === autosaveLastSavedJson) {
       console.log('[autosave] Nenhuma alteração para enviar.');
       scheduleAutosave();
       return;
@@ -778,7 +1360,11 @@ async function runAutosave() {
       content,
       `Autosave ficha ${fileName}`
     );
-    document.getElementById('githubUploadBtn').title = `Ficha enviada para ${autosaveAuth.repo}/${sheetPath}`;
+    const lineagePath = await uploadLineageToGithub(autosaveAuth, `Autosave linhagem ${lineageFileName()}`);
+    autosaveLastSavedJson = autosaveContent;
+    document.getElementById('githubUploadBtn').title = lineagePath
+      ? `Ficha enviada para ${autosaveAuth.repo}/${sheetPath} e ${lineagePath}`
+      : `Ficha enviada para ${autosaveAuth.repo}/${sheetPath}`;
     console.log(`[autosave] Ficha salva com sucesso em ${autosaveAuth.repo}/${sheetPath}.`);
     setAutosaveFeedback('Ficha salva com sucesso.');
   } catch (err) {
@@ -828,6 +1414,7 @@ async function loadSheetFromFolder(fileName) {
     const response = await fetch(`${sheetUrl(fileName)}?v=${Date.now()}`);
     if (!response.ok) throw new Error('sheet');
     applySheetData(await response.json(), fileName);
+    await loadLineageFromUrl('fichas');
     closeSheetModal();
   } catch (err) {
     setSheetModalStatus('Nao foi possivel carregar essa ficha.');
@@ -930,7 +1517,7 @@ function renderCreationSummary() {
     <span>Atributos ${attrRows.join(' · ')}</span>
     <span>Habilidades ${abilityRows.join(' · ')}</span>
     <span>Backgrounds ${sumPaths(backgroundPaths)}/7</span>
-    <span>Arete + Esferas + FV ${areteSpherePoolSpent()}/6</span>
+    <span>Arcana + Esferas + FV ${arcanaSpherePoolSpent()}/6</span>
   `;
 }
 
@@ -952,6 +1539,7 @@ function setCreationMode(enabled) {
 function startNewCharacter() {
   clearAiPreview();
   clearState();
+  clearLineageState();
   currentSheetFile = '';
   state.creation = {
     mode: true,
@@ -960,11 +1548,14 @@ function startNewCharacter() {
   };
   dotPaths().forEach(path => setPath(state, path, 0));
   Object.values(creationGroups.attributes).flat().forEach(path => setPath(state, path, 1));
-  setPath(state, 'advantages.arete', 1);
+  setPath(state, 'advantages.arcana', 1);
   setPath(state, 'identity.experience', 15);
+  setPath(state, 'health.damage', []);
   setPath(state, 'health.level', healthLevels[0].value);
+  addLineageMember(false);
   setCreationMode(true);
   renderFields();
+  renderLineage();
   closeStartModal();
 }
 
@@ -1001,6 +1592,7 @@ async function loadSheetFromGithub(fileName) {
     const response = await fetch(`${githubRawBase}/fichas/${fileName.split('/').map(encodeURIComponent).join('/')}?v=${Date.now()}`);
     if (!response.ok) throw new Error('sheet');
     applySheetData(await response.json(), fileName);
+    await loadLineageFromGithub();
     closeStartModal();
   } catch (err) {
     setStartModalStatus('Não foi possível carregar essa ficha.');
@@ -1378,7 +1970,8 @@ async function uploadJsonToGithub(event) {
   event.preventDefault();
 
   if (!requireCharacterName(setGithubModalStatus)) return;
-  ensureHealthLevel();
+  if (!requireLineageName(setGithubModalStatus)) return;
+  ensureHealthDamage();
   ensureNumberDefaults();
 
   const user = document.getElementById('githubUser').value.trim();
@@ -1409,10 +2002,16 @@ async function uploadJsonToGithub(event) {
       sheetJson(),
       `Atualiza ficha ${fileName}`
     );
+    const lineagePath = await uploadLineageToGithub(auth, `Atualiza linhagem ${lineageFileName()}`);
+    autosaveLastSavedJson = `${sheetJson()}\n---lineage---\n${lineagePath ? lineageJson() : ''}`;
     startAutosave(auth);
     document.getElementById('githubPat').value = '';
-    document.getElementById('githubUploadBtn').title = `Ficha enviada para ${repo}/${sheetPath}`;
-    setGithubModalStatus(`Ficha enviada para ${repo}/${sheetPath}.`);
+    document.getElementById('githubUploadBtn').title = lineagePath
+      ? `Ficha enviada para ${repo}/${sheetPath} e ${lineagePath}`
+      : `Ficha enviada para ${repo}/${sheetPath}`;
+    setGithubModalStatus(lineagePath
+      ? `Ficha enviada para ${repo}/${sheetPath}. Linhagem enviada para ${repo}/${lineagePath}.`
+      : `Ficha enviada para ${repo}/${sheetPath}.`);
     setAutosaveFeedback('Ficha salva com sucesso.');
     console.log(`[github] Ficha salva com sucesso em ${repo}/${sheetPath}. Autosave ativado.`);
   } catch (err) {
@@ -1502,26 +2101,58 @@ async function updateLocalManifest(fileName) {
   }
 }
 
+function downloadJsonFile(fileName, content) {
+  const blob = new Blob([content], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = fileName;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+async function writeLocalJsonFile(fileName, content) {
+  const fileHandle = await sheetsDirHandle.getFileHandle(fileName, { create: true });
+  const writable = await fileHandle.createWritable();
+  await writable.write(content);
+  await writable.close();
+}
+
+async function writeLocalLineageFile(fileName, content) {
+  const lineageDirHandle = await sheetsDirHandle.getDirectoryHandle('linhagens', { create: true });
+  const fileHandle = await lineageDirHandle.getFileHandle(fileName, { create: true });
+  const writable = await fileHandle.createWritable();
+  await writable.write(content);
+  await writable.close();
+}
+
 async function saveJson() {
   if (!requireCharacterName()) return;
-  ensureHealthLevel();
+  if (!requireLineageName()) return;
+  ensureHealthDamage();
   ensureNumberDefaults();
 
   const fileName = currentSheetFile || sheetFileName();
-  const content = JSON.stringify(state, null, 2);
+  const content = sheetJson();
+  const lineageShouldSave = lineageHasData() && lineageName();
+  const nextLineageFileName = lineageShouldSave ? lineageFileName() : '';
+  const nextLineageJson = lineageShouldSave ? lineageJson() : '';
 
   try {
     await ensureSheetsDirHandle();
-    const fileHandle = await sheetsDirHandle.getFileHandle(fileName, { create: true });
-    const writable = await fileHandle.createWritable();
-    await writable.write(content);
-    await writable.close();
+    await writeLocalJsonFile(fileName, content);
+    if (lineageShouldSave) {
+      await writeLocalLineageFile(nextLineageFileName, nextLineageJson);
+    }
     currentSheetFile = fileName;
     await updateLocalManifest(fileName);
-    document.getElementById('saveBtn').title = `Ficha salva em fichas/${fileName}`;
+    document.getElementById('saveBtn').title = lineageShouldSave
+      ? `Ficha salva em fichas/${fileName} e linhagens/${nextLineageFileName}`
+      : `Ficha salva em fichas/${fileName}`;
   } catch (err) {
     if (err.name === 'AbortError') return;
-    alert('Nao foi possivel salvar automaticamente. O navegador precisa permitir acesso de escrita a pasta fichas.');
+    downloadJsonFile(fileName, content);
+    if (lineageShouldSave) downloadJsonFile(nextLineageFileName, nextLineageJson);
   }
 }
 
@@ -1531,6 +2162,7 @@ function init() {
   bindFields();
   bindNumberSteppers();
   bindLevelEditor();
+  bindLineage();
   bindAiQuestions();
   populatePriorityControls();
   bindPriorityControls();
@@ -1566,6 +2198,7 @@ function init() {
       closeSheetModal();
       closeGithubModal();
       closeAiModal();
+      closeLineageDeathModal();
     }
   });
   document.getElementById('saveBtn').addEventListener('click', saveJson);
