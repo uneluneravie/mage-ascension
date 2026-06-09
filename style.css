@@ -114,7 +114,7 @@ button, .file-btn {
 .grid { display: grid; gap: 16px; margin: 16px 0; }
 .three { grid-template-columns: repeat(3, 1fr); }
 .two { grid-template-columns: repeat(2, 1fr); }
-.identity-health { grid-template-columns: 2fr 1fr; }
+.identity-health { grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr); }
 .spheres-advantages { grid-template-columns: 2fr 1fr; }
 .lineage-section { grid-template-columns: 2fr 1fr; }
 .panel {
@@ -125,7 +125,57 @@ button, .file-btn {
   box-shadow: inset 0 0 30px rgba(214,173,80,.03);
   position: relative;
 }
-.identity { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+.identity {
+  display: grid;
+  grid-template-columns: minmax(118px, 148px) minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+  padding: 12px;
+}
+.identity-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  min-width: 0;
+}
+.character-photo {
+  display: grid;
+  gap: 8px;
+}
+.character-photo-frame {
+  aspect-ratio: 3 / 4;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid rgba(214,173,80,.36);
+  border-radius: 14px;
+  background: linear-gradient(145deg, rgba(214,173,80,.1), rgba(255,255,255,.035));
+  color: rgba(201,185,137,.78);
+  font-size: 9.5px;
+  letter-spacing: .12em;
+  text-align: center;
+  text-transform: uppercase;
+}
+.character-photo-frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.character-photo-upload {
+  cursor: pointer;
+  place-items: center;
+  gap: 0;
+  min-height: 30px;
+  border: 1px solid rgba(214,173,80,.34);
+  border-radius: 999px;
+  padding: 7px 8px;
+  background: rgba(214,173,80,.06);
+  color: var(--gold-2);
+  text-align: center;
+}
+.character-photo-upload input {
+  display: none;
+}
 .creation-panel[hidden] { display: none; }
 .creation-panel { margin: 16px 0; }
 .creation-controls {
@@ -684,5 +734,5 @@ textarea.large { min-height: 220px; }
   color: var(--muted);
   font-size: 10px;
 }
-@media (max-width: 640px) { .three, .two, .identity-health, .spheres-advantages, .lineage-section, .identity, .creation-controls, .attribute-columns, .ability-columns, .sphere-grid, .lineage-sphere-grid { grid-template-columns: 1fr; } .start-actions { grid-template-columns: repeat(3, minmax(0, 1fr)); } .attribute-column, .ability-column, .sphere-grid .dot-row:nth-child(odd), .lineage-sphere-grid .lineage-dot-row:nth-child(odd) { border-right: 0; padding-right: 0; } .sphere-grid .dot-row:nth-child(odd)::after, .lineage-sphere-grid .lineage-dot-row:nth-child(odd)::after { display: none; } .hero { align-items: flex-start; flex-direction: column; } .actions { justify-content: flex-start; } }
+@media (max-width: 640px) { .three, .two, .identity-health, .spheres-advantages, .lineage-section, .identity, .identity-fields, .creation-controls, .attribute-columns, .ability-columns, .sphere-grid, .lineage-sphere-grid { grid-template-columns: 1fr; } .start-actions { grid-template-columns: repeat(3, minmax(0, 1fr)); } .attribute-column, .ability-column, .sphere-grid .dot-row:nth-child(odd), .lineage-sphere-grid .lineage-dot-row:nth-child(odd) { border-right: 0; padding-right: 0; } .sphere-grid .dot-row:nth-child(odd)::after, .lineage-sphere-grid .lineage-dot-row:nth-child(odd)::after { display: none; } .hero { align-items: flex-start; flex-direction: column; } .actions { justify-content: flex-start; } }
 @media print { .no-print { display: none; } body { background: #080605; } .sheet { width: 100%; margin: 0; } }

@@ -182,6 +182,88 @@ let autosaveLastSavedJson = '';
 let autosaveAuth = null;
 let aiPreviewState = null;
 let pendingLineageDeathId = null;
+let pendingCharacterImage = null;
+
+
+function imageExtensionFromFile(file) {
+  const fromName = file.name.split('.').pop()?.toLowerCase() || '';
+  const fromType = file.type.split('/')[1]?.toLowerCase() || '';
+  const ext = fromName || fromType || 'jpg';
+  return ext === 'jpeg' ? 'jpg' : ext.replace(/[^a-z0-9]/g, '') || 'jpg';
+}
+
+function characterImageFileName() {
+  const currentPath = getPath(state, 'identity.image', '');
+  const currentExt = currentPath.split('.').pop()?.toLowerCase();
+  const pendingExt = pendingCharacterImage?.extension;
+  return `${snakeCase(sheetTitle())}.${pendingExt || currentExt || 'jpg'}`;
+}
+
+function characterImageRelativePath() {
+  return `imagens/${characterImageFileName()}`;
+}
+
+function characterImageSource() {
+  if (pendingCharacterImage?.dataUrl) return pendingCharacterImage.dataUrl;
+  const imagePath = getPath(state, 'identity.image', '');
+  return imagePath ? sheetUrl(imagePath) : '';
+}
+
+function renderCharacterImage() {
+  const preview = document.getElementById('characterImagePreview');
+  const placeholder = document.getElementById('characterImagePlaceholder');
+  if (!preview || !placeholder) return;
+
+  const source = characterImageSource();
+  preview.hidden = !source;
+  placeholder.hidden = Boolean(source);
+  if (source) preview.src = source;
+  else preview.removeAttribute('src');
+}
+
+function readFileAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+}
+
+function dataUrlBase64(dataUrl) {
+  return String(dataUrl).split(',')[1] || '';
+}
+
+async function bindCharacterImageUpload() {
+  const input = document.getElementById('characterImageInput');
+  if (!input) return;
+
+  input.addEventListener('change', async () => {
+    const file = input.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      input.value = '';
+      alert('Selecione um arquivo de imagem.');
+      return;
+    }
+
+    const dataUrl = await readFileAsDataUrl(file);
+    pendingCharacterImage = {
+      dataUrl,
+      extension: imageExtensionFromFile(file)
+    };
+    setPath(state, 'identity.image', characterImageRelativePath());
+    renderCharacterImage();
+  });
+}
+
+function ensureCharacterImagePath() {
+  if (!pendingCharacterImage) return '';
+  const imagePath = characterImageRelativePath();
+  setPath(state, 'identity.image', imagePath);
+  return imagePath;
+}
 
 function setPath(obj, path, value) {
   const keys = path.split('.');
@@ -785,6 +867,7 @@ function renderFields() {
     button.disabled = Boolean(aiPreviewState);
   });
   document.querySelectorAll('[data-dots]').forEach(renderDots);
+  renderCharacterImage();
   renderHealthDamage();
   updateAllDotCosts();
   renderCreationSummary();
@@ -1156,6 +1239,7 @@ function applySheetData(data, fileName = '') {
   clearAiPreview();
   clearState();
   clearLineageState();
+  pendingCharacterImage = null;
   Object.assign(state, data);
   if (data.lineage && typeof data.lineage === 'object') {
     lineageState.name = data.lineage.name || data.identity?.lineage || '';
@@ -1222,6 +1306,7 @@ function setGithubModalStatus(message) {
 
 function sheetJson() {
   ensureHealthDamage();
+  ensureCharacterImagePath();
   ensureCreationSnapshot();
   if (lineageName()) setPath(state, 'identity.lineage', lineageName());
   delete state.lineage;
@@ -1346,7 +1431,7 @@ async function runAutosave() {
     ensureNumberDefaults();
     const content = sheetJson();
     const lineageContent = lineageHasData() && lineageName() ? lineageJson() : '';
-    const autosaveContent = `${content}\n---lineage---\n${lineageContent}`;
+    const autosaveContent = `${content}\n---lineage---\n${lineageContent}\n---image---\n${pendingCharacterImage?.dataUrl || ''}`;
     if (autosaveContent === autosaveLastSavedJson) {
       console.log('[autosave] Nenhuma alteração para enviar.');
       scheduleAutosave();
@@ -1361,8 +1446,11 @@ async function runAutosave() {
       `Autosave ficha ${fileName}`
     );
     const lineagePath = await uploadLineageToGithub(autosaveAuth, `Autosave linhagem ${lineageFileName()}`);
-    autosaveLastSavedJson = autosaveContent;
-    document.getElementById('githubUploadBtn').title = lineagePath
+    const imagePath = await uploadCharacterImageToGithub(autosaveAuth, `Autosave imagem ${characterImageFileName()}`);
+    autosaveLastSavedJson = `${content}\n---lineage---\n${lineageContent}\n---image---\n`;
+    document.getElementById('githubUploadBtn').title = imagePath
+      ? `Ficha enviada para ${autosaveAuth.repo}/${sheetPath} e ${imagePath}`
+      : lineagePath
       ? `Ficha enviada para ${autosaveAuth.repo}/${sheetPath} e ${lineagePath}`
       : `Ficha enviada para ${autosaveAuth.repo}/${sheetPath}`;
     console.log(`[autosave] Ficha salva com sucesso em ${autosaveAuth.repo}/${sheetPath}.`);
@@ -1540,6 +1628,7 @@ function startNewCharacter() {
   clearAiPreview();
   clearState();
   clearLineageState();
+  pendingCharacterImage = null;
   currentSheetFile = '';
   state.creation = {
     mode: true,
@@ -1918,11 +2007,11 @@ async function getGitHubFile(repo, branch, path, token) {
   );
 }
 
-async function putGitHubFile(repo, branch, path, content, message, token, currentSha = null) {
+async function putGitHubFileBase64(repo, branch, path, base64Content, message, token, currentSha = null) {
   const encodedPath = path.split('/').map(encodeURIComponent).join('/');
   const body = {
     message,
-    content: textToBase64(content),
+    content: base64Content,
     branch
   };
 
@@ -1935,9 +2024,27 @@ async function putGitHubFile(repo, branch, path, content, message, token, curren
   });
 }
 
+async function putGitHubFile(repo, branch, path, content, message, token, currentSha = null) {
+  return putGitHubFileBase64(repo, branch, path, textToBase64(content), message, token, currentSha);
+}
+
 async function upsertGitHubFile(repo, branch, path, content, message, token) {
   const existingFile = await getGitHubFile(repo, branch, path, token);
   await putGitHubFile(repo, branch, path, content, message, token, existingFile?.sha || null);
+}
+
+async function upsertGitHubFileBase64(repo, branch, path, base64Content, message, token) {
+  const existingFile = await getGitHubFile(repo, branch, path, token);
+  await putGitHubFileBase64(repo, branch, path, base64Content, message, token, existingFile?.sha || null);
+}
+
+async function uploadCharacterImageToGithub(auth, message) {
+  if (!pendingCharacterImage) return '';
+  const imagePath = ensureCharacterImagePath();
+  const githubPath = joinGitHubPath(auth.sheetsPath, imagePath);
+  await upsertGitHubFileBase64(auth.repo, auth.branch, githubPath, dataUrlBase64(pendingCharacterImage.dataUrl), message, auth.token);
+  pendingCharacterImage = null;
+  return githubPath;
 }
 
 async function updateGitHubManifest(repo, branch, sheetsPath, fileName, token) {
@@ -2003,14 +2110,21 @@ async function uploadJsonToGithub(event) {
       `Atualiza ficha ${fileName}`
     );
     const lineagePath = await uploadLineageToGithub(auth, `Atualiza linhagem ${lineageFileName()}`);
-    autosaveLastSavedJson = `${sheetJson()}\n---lineage---\n${lineagePath ? lineageJson() : ''}`;
+    const imagePath = await uploadCharacterImageToGithub(auth, `Atualiza imagem ${characterImageFileName()}`);
+    autosaveLastSavedJson = `${sheetJson()}\n---lineage---\n${lineagePath ? lineageJson() : ''}\n---image---\n`;
     startAutosave(auth);
     document.getElementById('githubPat').value = '';
-    document.getElementById('githubUploadBtn').title = lineagePath
-      ? `Ficha enviada para ${repo}/${sheetPath} e ${lineagePath}`
-      : `Ficha enviada para ${repo}/${sheetPath}`;
-    setGithubModalStatus(lineagePath
-      ? `Ficha enviada para ${repo}/${sheetPath}. Linhagem enviada para ${repo}/${lineagePath}.`
+    document.getElementById('githubUploadBtn').title = imagePath
+      ? `Ficha enviada para ${repo}/${sheetPath} e ${imagePath}`
+      : lineagePath
+        ? `Ficha enviada para ${repo}/${sheetPath} e ${lineagePath}`
+        : `Ficha enviada para ${repo}/${sheetPath}`;
+    const extraUploads = [
+      lineagePath ? `Linhagem enviada para ${repo}/${lineagePath}` : '',
+      imagePath ? `Imagem enviada para ${repo}/${imagePath}` : ''
+    ].filter(Boolean).join('. ');
+    setGithubModalStatus(extraUploads
+      ? `Ficha enviada para ${repo}/${sheetPath}. ${extraUploads}.`
       : `Ficha enviada para ${repo}/${sheetPath}.`);
     setAutosaveFeedback('Ficha salva com sucesso.');
     console.log(`[github] Ficha salva com sucesso em ${repo}/${sheetPath}. Autosave ativado.`);
@@ -2118,6 +2232,18 @@ async function writeLocalJsonFile(fileName, content) {
   await writable.close();
 }
 
+async function writeLocalCharacterImage() {
+  if (!pendingCharacterImage) return '';
+  const imageDirHandle = await sheetsDirHandle.getDirectoryHandle('imagens', { create: true });
+  const imagePath = ensureCharacterImagePath();
+  const imageFileName = imagePath.split('/').pop();
+  const fileHandle = await imageDirHandle.getFileHandle(imageFileName, { create: true });
+  const writable = await fileHandle.createWritable();
+  await writable.write(await (await fetch(pendingCharacterImage.dataUrl)).blob());
+  await writable.close();
+  return imagePath;
+}
+
 async function writeLocalLineageFile(fileName, content) {
   const lineageDirHandle = await sheetsDirHandle.getDirectoryHandle('linhagens', { create: true });
   const fileHandle = await lineageDirHandle.getFileHandle(fileName, { create: true });
@@ -2141,6 +2267,7 @@ async function saveJson() {
   try {
     await ensureSheetsDirHandle();
     await writeLocalJsonFile(fileName, content);
+    await writeLocalCharacterImage();
     if (lineageShouldSave) {
       await writeLocalLineageFile(nextLineageFileName, nextLineageJson);
     }
@@ -2164,6 +2291,7 @@ function init() {
   bindLevelEditor();
   bindLineage();
   bindAiQuestions();
+  bindCharacterImageUpload();
   populatePriorityControls();
   bindPriorityControls();
   document.getElementById('newCharacterBtn').addEventListener('click', startNewCharacter);

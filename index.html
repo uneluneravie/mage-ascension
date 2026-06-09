@@ -46,33 +46,45 @@
 
     <section class="grid identity-health">
       <div class="panel identity">
-        <label>Nome<input data-field="identity.name" placeholder="Nome do personagem" required /></label>
-        <label>Jogador(a)<input data-field="identity.player" /></label>
-        <label>Crônica
-          <select data-field="identity.chronicle">
-            <option value="Idade Média">Idade Média</option>
-            <option value="Urbana">Urbano</option>
-            <option value="Futurista">Futurista</option>
-          </select>
-        </label>
-        <label><span id="resourceLabel">Experiência</span>
-          <span class="experience-control">
-            <input id="experienceInput" data-field="identity.experience" data-number-default="0" type="number" min="0" step="1" value="0" inputmode="numeric" />
-            <button id="levelEditBtn" class="icon-btn level-edit-btn no-print" type="button" aria-label="Editar níveis" title="Editar níveis">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="m12 20 9-9-8-8-9 9v8h8z"></path>
-                <path d="m16 7 1 1"></path>
-              </svg>
-            </button>
-            <button id="aiIntegrationBtn" class="icon-btn ai-integration-btn no-print" type="button" aria-label="Integração de IA" title="Integração de IA">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M12 3l1.7 5.2L19 10l-5.3 1.8L12 17l-1.7-5.2L5 10l5.3-1.8L12 3z"></path>
-                <path d="M19 16l.7 2.1L22 19l-2.3.9L19 22l-.7-2.1L16 19l2.3-.9L19 16z"></path>
-                <path d="M5 15l.5 1.5L7 17l-1.5.5L5 19l-.5-1.5L3 17l1.5-.5L5 15z"></path>
-              </svg>
-            </button>
-          </span>
-        </label>
+        <section class="character-photo" aria-label="Imagem do personagem 3x4">
+          <div class="character-photo-frame">
+            <img id="characterImagePreview" alt="Imagem do personagem" hidden />
+            <span id="characterImagePlaceholder">Imagem 3x4</span>
+          </div>
+          <label class="character-photo-upload no-print">
+            <span>Enviar imagem</span>
+            <input id="characterImageInput" type="file" accept="image/*" />
+          </label>
+        </section>
+        <div class="identity-fields">
+          <label>Nome<input data-field="identity.name" placeholder="Nome do personagem" required /></label>
+          <label>Jogador(a)<input data-field="identity.player" /></label>
+          <label>Crônica
+            <select data-field="identity.chronicle">
+              <option value="Idade Média">Idade Média</option>
+              <option value="Urbana">Urbano</option>
+              <option value="Futurista">Futurista</option>
+            </select>
+          </label>
+          <label><span id="resourceLabel">Experiência</span>
+            <span class="experience-control">
+              <input id="experienceInput" data-field="identity.experience" data-number-default="0" type="number" min="0" step="1" value="0" inputmode="numeric" />
+              <button id="levelEditBtn" class="icon-btn level-edit-btn no-print" type="button" aria-label="Editar níveis" title="Editar níveis">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="m12 20 9-9-8-8-9 9v8h8z"></path>
+                  <path d="m16 7 1 1"></path>
+                </svg>
+              </button>
+              <button id="aiIntegrationBtn" class="icon-btn ai-integration-btn no-print" type="button" aria-label="Integração de IA" title="Integração de IA">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M12 3l1.7 5.2L19 10l-5.3 1.8L12 17l-1.7-5.2L5 10l5.3-1.8L12 3z"></path>
+                  <path d="M19 16l.7 2.1L22 19l-2.3.9L19 22l-.7-2.1L16 19l2.3-.9L19 16z"></path>
+                  <path d="M5 15l.5 1.5L7 17l-1.5.5L5 19l-.5-1.5L3 17l1.5-.5L5 15z"></path>
+                </svg>
+              </button>
+            </span>
+          </label>
+        </div>
       </div>
       <div class="panel health-panel">
       <label><span class="health-title">Saúde</span>
