@@ -29,7 +29,7 @@
       "name": "Teste",
       "chronicle": "Idade Média",
       "status": "dead",
-      "dead": false
+      "dead": true
     },
     {
       "name": "mago lari",
