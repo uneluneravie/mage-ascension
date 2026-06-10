@@ -1,0 +1,72 @@
+{
+  "identity": {
+    "name": "Baba Yaga",
+    "experience": 8,
+    "lineage": "linhagem teste",
+    "image": "imagens/baba_yaga.png",
+    "chronicle": "Idade Média"
+  },
+  "attributes": {
+    "perception": 2
+  },
+  "creation": {
+    "mode": false,
+    "attributePriorities": {
+      "primary": "physical",
+      "secondary": "social",
+      "tertiary": "mental"
+    },
+    "abilityPriorities": {
+      "primary": "talents",
+      "secondary": "skills",
+      "tertiary": "knowledges"
+    }
+  },
+  "spheres": {
+    "forces": 3
+  },
+  "health": {
+    "damage": [
+      "X",
+      "/"
+    ],
+    "level": "hurt"
+  },
+  "advantages": {
+    "quintessence": 0,
+    "paradox": 0
+  },
+  "creationSnapshot": {
+    "capturedAt": "2026-06-08T01:06:16.957Z",
+    "identity": {
+      "name": "Teste",
+      "experience": 8,
+      "lineage": "linhagem teste"
+    },
+    "attributes": {
+      "perception": 2
+    },
+    "abilities": {},
+    "spheres": {
+      "forces": 1
+    },
+    "advantages": {
+      "quintessence": 0,
+      "paradox": 0
+    },
+    "backgrounds": {},
+    "creation": {
+      "mode": false,
+      "attributePriorities": {
+        "primary": "physical",
+        "secondary": "social",
+        "tertiary": "mental"
+      },
+      "abilityPriorities": {
+        "primary": "talents",
+        "secondary": "skills",
+        "tertiary": "knowledges"
+      }
+    }
+  }
+}
