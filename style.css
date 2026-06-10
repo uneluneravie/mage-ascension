@@ -605,6 +605,10 @@ textarea.large { min-height: 220px; }
   cursor: default;
   opacity: .45;
 }
+.lineage-revive-btn {
+  color: #dff6c9;
+  border-color: rgba(223,246,201,.46);
+}
 .lineage-add-btn {
   width: 100%;
   margin-top: 10px;

@@ -182,6 +182,7 @@ let autosaveLastSavedJson = '';
 let autosaveAuth = null;
 let aiPreviewState = null;
 let pendingLineageDeathId = null;
+let pendingLineageReviveId = null;
 let pendingCharacterImage = null;
 let pendingCharacterImageRemovalPath = '';
 
@@ -967,6 +968,7 @@ function clearLineageState() {
   lineageState.sphereExperience = {};
   lineageState.members = [];
   pendingLineageDeathId = null;
+  pendingLineageReviveId = null;
 }
 
 function lineageName() {
@@ -998,9 +1000,20 @@ function addLineageMember(render = true) {
     id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
     name: '',
     chronicle: '',
-    dead: false
+    dead: false,
+    lineageContribution: {}
   });
   if (render) renderLineageMembers();
+}
+
+function normalizeLineageMember(member = {}) {
+  return {
+    id: member.id || `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+    name: member.name || '',
+    chronicle: member.chronicle || '',
+    dead: Boolean(member.dead || member.status === 'dead' || member.inMemoriam),
+    lineageContribution: { ...(member.lineageContribution || member.sphereExperienceContribution || {}) }
+  };
 }
 
 function ratingToXp(rating) {
@@ -1097,6 +1110,7 @@ function characterSphereDeathXp(characterData, key) {
 
 function absorbCharacterSpheresIntoLineage(characterData) {
   const debugRows = [];
+  const contribution = {};
 
   spherePaths.forEach(path => {
     const key = path.split('.')[1];
@@ -1121,11 +1135,41 @@ function absorbCharacterSpheresIntoLineage(characterData) {
     });
 
     if (!transferredXp) return;
+    contribution[key] = transferredXp;
     lineageState.sphereExperience[key] = totalXp;
     lineageState.spheres[key] = finalRating;
   });
 
   console.groupCollapsed('[lineage death] Calculo de esferas herdadas');
+  console.table(debugRows);
+  console.groupEnd();
+  return contribution;
+}
+
+function removeLineageContribution(contribution = {}) {
+  const debugRows = [];
+
+  spherePaths.forEach(path => {
+    const key = path.split('.')[1];
+    const removedXp = Math.max(0, Number(contribution[key]) || 0);
+    const beforeXp = lineageSphereXp(key);
+    const totalXp = Math.max(0, beforeXp - removedXp);
+    const finalRating = roundedRating(xpToRating(totalXp));
+
+    debugRows.push({
+      sphere: key,
+      removedXp,
+      lineageXpBefore: beforeXp,
+      lineageXpAfter: totalXp,
+      lineageRatingAfter: finalRating
+    });
+
+    if (!removedXp) return;
+    lineageState.sphereExperience[key] = totalXp;
+    lineageState.spheres[key] = finalRating;
+  });
+
+  console.groupCollapsed('[lineage revive] Remocao de esferas herdadas');
   console.table(debugRows);
   console.groupEnd();
 }
@@ -1272,12 +1316,19 @@ function renderLineageMembers() {
 
     const deathButton = document.createElement('button');
     deathButton.type = 'button';
-    deathButton.className = 'lineage-death-btn no-print';
-    deathButton.textContent = '☠';
-    deathButton.title = 'Marcar morte';
-    deathButton.setAttribute('aria-label', `Marcar morte de ${member.name || 'personagem'}`);
-    deathButton.disabled = Boolean(member.dead);
-    deathButton.addEventListener('click', () => openLineageDeathModal(member.id));
+    deathButton.className = member.dead
+      ? 'lineage-death-btn lineage-revive-btn no-print'
+      : 'lineage-death-btn no-print';
+    deathButton.textContent = member.dead ? '↺' : '☠';
+    deathButton.title = member.dead ? 'Reviver personagem' : 'Marcar morte';
+    deathButton.setAttribute('aria-label', `${member.dead ? 'Reviver' : 'Marcar morte de'} ${member.name || 'personagem'}`);
+    deathButton.addEventListener('click', () => {
+      if (member.dead) {
+        openLineageReviveModal(member.id);
+        return;
+      }
+      openLineageDeathModal(member.id);
+    });
 
     row.append(nameWrap, chronicleInput, deathButton);
     list.appendChild(row);
@@ -1308,6 +1359,12 @@ function bindLineage() {
   document.getElementById('lineageDeathModal')?.addEventListener('click', event => {
     if (event.target.id === 'lineageDeathModal') closeLineageDeathModal();
   });
+  document.getElementById('closeLineageReviveModal')?.addEventListener('click', closeLineageReviveModal);
+  document.getElementById('cancelLineageReviveBtn')?.addEventListener('click', closeLineageReviveModal);
+  document.getElementById('confirmLineageReviveBtn')?.addEventListener('click', confirmLineageRevive);
+  document.getElementById('lineageReviveModal')?.addEventListener('click', event => {
+    if (event.target.id === 'lineageReviveModal') closeLineageReviveModal();
+  });
   renderLineage();
 }
 
@@ -1319,6 +1376,16 @@ function openLineageDeathModal(memberId) {
 function closeLineageDeathModal() {
   pendingLineageDeathId = null;
   document.getElementById('lineageDeathModal').hidden = true;
+}
+
+function openLineageReviveModal(memberId) {
+  pendingLineageReviveId = memberId;
+  document.getElementById('lineageReviveModal').hidden = false;
+}
+
+function closeLineageReviveModal() {
+  pendingLineageReviveId = null;
+  document.getElementById('lineageReviveModal').hidden = true;
 }
 
 async function confirmLineageDeath() {
@@ -1340,10 +1407,11 @@ async function confirmLineageDeath() {
       lineageSphereExperienceBefore: { ...lineageState.sphereExperience }
     });
     const characterData = await fetchLineageMemberSheet(member);
-    absorbCharacterSpheresIntoLineage(characterData);
+    member.lineageContribution = absorbCharacterSpheresIntoLineage(characterData);
     member.dead = true;
     console.log('[lineage death] Morte confirmada e linhagem atualizada', {
       memberName: member.name,
+      lineageContribution: member.lineageContribution,
       lineageSpheresAfter: { ...lineageState.spheres },
       lineageSphereExperienceAfter: { ...lineageState.sphereExperience }
     });
@@ -1357,6 +1425,43 @@ async function confirmLineageDeath() {
   } finally {
     if (button) button.disabled = false;
   }
+}
+
+function confirmLineageRevive() {
+  const member = lineageState.members.find(item => item.id === pendingLineageReviveId);
+  if (!member) {
+    console.warn('[lineage revive] Nenhum personagem pendente encontrado.', { pendingLineageReviveId });
+    closeLineageReviveModal();
+    return;
+  }
+
+  console.log('[lineage revive] Confirmando retorno a vida', {
+    memberName: member.name,
+    lineageContribution: member.lineageContribution || {},
+    lineageSpheresBefore: { ...lineageState.spheres },
+    lineageSphereExperienceBefore: { ...lineageState.sphereExperience }
+  });
+
+  if (!Object.values(member.lineageContribution || {}).some(value => Number(value) > 0)) {
+    console.warn('[lineage revive] Personagem morto sem contribuicao registrada. Nenhuma XP sera removida.', {
+      memberName: member.name
+    });
+  }
+
+  removeLineageContribution(member.lineageContribution || {});
+  member.dead = false;
+  member.lineageContribution = {};
+
+  console.log('[lineage revive] Personagem revivido e linhagem atualizada', {
+    memberName: member.name,
+    lineageSpheresAfter: { ...lineageState.spheres },
+    lineageSphereExperienceAfter: { ...lineageState.sphereExperience }
+  });
+
+  closeLineageReviveModal();
+  renderLineageMembers();
+  document.querySelectorAll('[data-lineage-dots]').forEach(renderLineageDots);
+  document.querySelectorAll('[data-lineage-xp]').forEach(renderLineageExperience);
 }
 
 function clearState() {
@@ -1429,7 +1534,7 @@ function applySheetData(data, fileName = '') {
     lineageState.spheres = { ...(data.lineage.spheres || {}) };
     lineageState.sphereExperience = { ...(data.lineage.sphereExperience || {}) };
     syncLineageSpheresFromExperience();
-    lineageState.members = Array.isArray(data.lineage.members) ? data.lineage.members : [];
+    lineageState.members = Array.isArray(data.lineage.members) ? data.lineage.members.map(normalizeLineageMember) : [];
     delete state.lineage;
   }
   currentSheetFile = fileName;
@@ -1445,12 +1550,7 @@ function applyLineageData(data) {
   lineageState.sphereExperience = { ...(data.sphereExperience || {}) };
   syncLineageSpheresFromExperience();
   lineageState.members = Array.isArray(data.members)
-    ? data.members.map(member => ({
-      id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
-      name: member.name || '',
-      chronicle: member.chronicle || '',
-      dead: Boolean(member.dead || member.status === 'dead' || member.inMemoriam)
-    }))
+    ? data.members.map(normalizeLineageMember)
     : [];
   if (lineageState.name) setPath(state, 'identity.lineage', lineageState.name);
   renderLineage();
@@ -1534,7 +1634,8 @@ function lineageData() {
         name: member.name || '',
         chronicle: member.chronicle || '',
         status: member.dead ? 'dead' : 'alive',
-        dead: Boolean(member.dead)
+        dead: Boolean(member.dead),
+        lineageContribution: { ...(member.lineageContribution || {}) }
       }))
   };
 }
@@ -2552,6 +2653,7 @@ function init() {
       closeGithubModal();
       closeAiModal();
       closeLineageDeathModal();
+      closeLineageReviveModal();
       closeCharacterImageRemoveModal();
     }
   });
