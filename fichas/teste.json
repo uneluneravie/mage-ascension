@@ -1,8 +1,10 @@
 {
   "identity": {
-    "name": "Teste",
+    "name": "Baba Yaga",
     "experience": 8,
-    "lineage": "linhagem teste"
+    "lineage": "linhagem teste",
+    "image": "imagens/baba_yaga.png",
+    "chronicle": "Idade Média"
   },
   "attributes": {
     "perception": 2
@@ -24,8 +26,11 @@
     "forces": 3
   },
   "health": {
-    "damage": [],
-    "level": "healthy"
+    "damage": [
+      "X",
+      "/"
+    ],
+    "level": "hurt"
   },
   "advantages": {
     "quintessence": 0,
