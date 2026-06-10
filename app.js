@@ -876,6 +876,13 @@ function roundedRating(value) {
   return Math.round((Number(value) || 0) * 100) / 100;
 }
 
+function formatLineageXp(value) {
+  const rounded = Math.round((Number(value) || 0) * 100) / 100;
+  return Number.isInteger(rounded)
+    ? String(rounded)
+    : String(rounded).replace(/(\.\d*?)0+$/, '$1').replace(/\.$/, '');
+}
+
 function syncLineageSpheresFromExperience() {
   spherePaths.forEach(path => {
     const key = path.split('.')[1];
@@ -894,22 +901,62 @@ function creationSphereRating(characterData, key) {
   return current > 0 ? 1 : 0;
 }
 
-function characterSphereDeathXp(characterData, key) {
+function characterSphereDeathBreakdown(characterData, key) {
   const current = Number(characterData?.spheres?.[key] || 0);
+  const hasCreationSnapshot = characterData?.creationSnapshot?.spheres?.[key] !== undefined
+    && characterData?.creationSnapshot?.spheres?.[key] !== null;
   const createdWith = creationSphereRating(characterData, key);
-  return Math.max(0, ratingToXp(current) - ratingToXp(createdWith));
+  const currentXp = ratingToXp(current);
+  const creationXp = ratingToXp(createdWith);
+  const gainedXp = Math.max(0, currentXp - creationXp);
+  return {
+    key,
+    current,
+    createdWith,
+    source: hasCreationSnapshot ? 'creationSnapshot' : 'fallback-lvl1',
+    currentXp,
+    creationXp,
+    gainedXp
+  };
+}
+
+function characterSphereDeathXp(characterData, key) {
+  return characterSphereDeathBreakdown(characterData, key).gainedXp;
 }
 
 function absorbCharacterSpheresIntoLineage(characterData) {
+  const debugRows = [];
+
   spherePaths.forEach(path => {
     const key = path.split('.')[1];
-    const gainedXp = characterSphereDeathXp(characterData, key) / 2;
-    if (!gainedXp) return;
+    const characterBreakdown = characterSphereDeathBreakdown(characterData, key);
+    const transferredXp = characterBreakdown.gainedXp / 2;
+    const beforeXp = lineageSphereXp(key);
+    const totalXp = beforeXp + transferredXp;
+    const finalRating = roundedRating(xpToRating(totalXp));
 
-    const totalXp = lineageSphereXp(key) + gainedXp;
+    debugRows.push({
+      sphere: key,
+      characterRating: characterBreakdown.current,
+      creationRating: characterBreakdown.createdWith,
+      creationSource: characterBreakdown.source,
+      characterXp: characterBreakdown.currentXp,
+      ignoredCreationXp: characterBreakdown.creationXp,
+      inheritedXp: characterBreakdown.gainedXp,
+      transferredXp,
+      lineageXpBefore: beforeXp,
+      lineageXpAfter: totalXp,
+      lineageRatingAfter: finalRating
+    });
+
+    if (!transferredXp) return;
     lineageState.sphereExperience[key] = totalXp;
-    lineageState.spheres[key] = roundedRating(xpToRating(totalXp));
+    lineageState.spheres[key] = finalRating;
   });
+
+  console.groupCollapsed('[lineage death] Calculo de esferas herdadas');
+  console.table(debugRows);
+  console.groupEnd();
 }
 
 function githubSheetsRawBase() {
@@ -928,9 +975,26 @@ function lineageMemberSheetFileName(member) {
 
 async function fetchLineageMemberSheet(member) {
   const fileName = lineageMemberSheetFileName(member);
-  const response = await fetch(`${githubSheetsRawBase()}/${fileName.split('/').map(encodeURIComponent).join('/')}?v=${Date.now()}`);
-  if (!response.ok) throw new Error('member-sheet-not-found');
-  return response.json();
+  const url = `${githubSheetsRawBase()}/${fileName.split('/').map(encodeURIComponent).join('/')}?v=${Date.now()}`;
+  console.log('[lineage death] Buscando ficha do personagem no GitHub', {
+    memberName: member.name,
+    fileName,
+    url
+  });
+  const response = await fetch(url);
+  console.log('[lineage death] Resposta da ficha do personagem', {
+    ok: response.ok,
+    status: response.status,
+    statusText: response.statusText
+  });
+  if (!response.ok) throw new Error(`member-sheet-not-found:${response.status}`);
+  const data = await response.json();
+  console.log('[lineage death] Ficha carregada', {
+    characterName: data?.identity?.name,
+    spheres: data?.spheres,
+    creationSnapshotSpheres: data?.creationSnapshot?.spheres
+  });
+  return data;
 }
 
 function makeLineageDots(container) {
@@ -978,6 +1042,21 @@ function renderLineageDots(container) {
       dot.style.background = '';
     }
   });
+}
+
+function makeLineageExperience(container) {
+  const label = container.dataset.label;
+  container.className = 'lineage-xp-row';
+  container.innerHTML = '<span class="dot-label"></span><span class="lineage-xp-value"></span>';
+  container.querySelector('.dot-label').textContent = label;
+  renderLineageExperience(container);
+}
+
+function renderLineageExperience(container) {
+  const key = container.dataset.lineageXp;
+  const value = container.querySelector('.lineage-xp-value');
+  if (!value) return;
+  value.textContent = formatLineageXp(lineageSphereXp(key));
 }
 
 function renderLineageMembers() {
@@ -1039,11 +1118,13 @@ function renderLineage() {
   lineageState.name = getPath(state, 'identity.lineage', lineageState.name || '');
   if (nameInput) nameInput.value = lineageState.name;
   document.querySelectorAll('[data-lineage-dots]').forEach(renderLineageDots);
+  document.querySelectorAll('[data-lineage-xp]').forEach(renderLineageExperience);
   renderLineageMembers();
 }
 
 function bindLineage() {
   document.querySelectorAll('[data-lineage-dots]').forEach(makeLineageDots);
+  document.querySelectorAll('[data-lineage-xp]').forEach(makeLineageExperience);
   document.getElementById('lineageNameInput')?.addEventListener('input', event => {
     lineageState.name = event.target.value;
     setPath(state, 'identity.lineage', lineageState.name);
@@ -1072,6 +1153,7 @@ function closeLineageDeathModal() {
 async function confirmLineageDeath() {
   const member = lineageState.members.find(item => item.id === pendingLineageDeathId);
   if (!member) {
+    console.warn('[lineage death] Nenhum personagem pendente encontrado.', { pendingLineageDeathId });
     closeLineageDeathModal();
     return;
   }
@@ -1080,12 +1162,24 @@ async function confirmLineageDeath() {
   if (button) button.disabled = true;
 
   try {
+    console.log('[lineage death] Confirmando morte', {
+      memberName: member.name,
+      lineageName: lineageName(),
+      lineageSpheresBefore: { ...lineageState.spheres },
+      lineageSphereExperienceBefore: { ...lineageState.sphereExperience }
+    });
     const characterData = await fetchLineageMemberSheet(member);
     absorbCharacterSpheresIntoLineage(characterData);
     member.dead = true;
+    console.log('[lineage death] Morte confirmada e linhagem atualizada', {
+      memberName: member.name,
+      lineageSpheresAfter: { ...lineageState.spheres },
+      lineageSphereExperienceAfter: { ...lineageState.sphereExperience }
+    });
     closeLineageDeathModal();
     renderLineageMembers();
     document.querySelectorAll('[data-lineage-dots]').forEach(renderLineageDots);
+    document.querySelectorAll('[data-lineage-xp]').forEach(renderLineageExperience);
   } catch (err) {
     console.error('[lineage] Nao foi possivel absorver as esferas do personagem.', err);
     alert('Nao foi possivel carregar a ficha desse personagem no GitHub. A morte nao foi confirmada.');
@@ -1242,7 +1336,7 @@ function creationSnapshotData() {
 }
 
 function ensureCreationSnapshot() {
-  if (!state.creationSnapshot || state.creation?.mode) {
+  if (!state.creationSnapshot) {
     state.creationSnapshot = creationSnapshotData();
   }
 }
