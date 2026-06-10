@@ -4,7 +4,7 @@
     "fate": 0,
     "space": 0,
     "spirit": 0,
-    "forces": 0,
+    "forces": 1.75,
     "matter": 0,
     "mind": 0,
     "death": 0,
@@ -16,7 +16,7 @@
     "fate": 0,
     "space": 0,
     "spirit": 0,
-    "forces": 0,
+    "forces": 17.5,
     "matter": 0,
     "mind": 0,
     "death": 0,
@@ -28,9 +28,11 @@
     {
       "name": "Teste",
       "chronicle": "Idade Média",
-      "status": "alive",
-      "dead": false,
-      "lineageContribution": {}
+      "status": "dead",
+      "dead": true,
+      "lineageContribution": {
+        "forces": 17.5
+      }
     },
     {
       "name": "mago lari",
