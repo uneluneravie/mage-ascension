@@ -2,7 +2,8 @@
   "identity": {
     "name": "Teste",
     "experience": 8,
-    "lineage": "linhagem teste"
+    "lineage": "linhagem teste",
+    "image": "imagens/teste.png"
   },
   "attributes": {
     "perception": 2
