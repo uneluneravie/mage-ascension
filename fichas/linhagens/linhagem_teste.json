@@ -28,8 +28,8 @@
     {
       "name": "Teste",
       "chronicle": "Idade Média",
-      "status": "dead",
-      "dead": true,
+      "status": "alive",
+      "dead": false,
       "lineageContribution": {}
     },
     {
