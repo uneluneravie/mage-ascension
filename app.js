@@ -182,6 +182,176 @@ let autosaveLastSavedJson = '';
 let autosaveAuth = null;
 let aiPreviewState = null;
 let pendingLineageDeathId = null;
+let pendingCharacterImage = null;
+let pendingCharacterImageRemovalPath = '';
+
+function imageExtensionFromMime(mimeType) {
+  const ext = String(mimeType).split('/')[1]?.toLowerCase() || 'png';
+  return ext === 'jpeg' ? 'jpg' : ext.replace(/[^a-z0-9]/g, '') || 'png';
+}
+
+function dataUrlMime(dataUrl) {
+  return String(dataUrl).match(/^data:([^;,]+)/)?.[1] || 'image/png';
+}
+
+function characterImageFileName() {
+  const currentPath = getPath(state, 'identity.image', '');
+  const currentExt = currentPath.split('.').pop()?.toLowerCase();
+  const pendingExt = pendingCharacterImage?.extension;
+  return `${snakeCase(sheetTitle())}.${pendingExt || currentExt || 'png'}`;
+}
+
+function characterImageRelativePath() {
+  return `imagens/${characterImageFileName()}`;
+}
+
+function characterImageSource() {
+  if (pendingCharacterImage?.dataUrl) return pendingCharacterImage.dataUrl;
+  const imagePath = getPath(state, 'identity.image', '');
+  return imagePath ? sheetUrl(imagePath) : '';
+}
+
+function renderCharacterImage() {
+  const frame = document.getElementById('characterImagePicker');
+  const preview = document.getElementById('characterImagePreview');
+  const placeholder = document.getElementById('characterImagePlaceholder');
+  const removeButton = document.getElementById('removeCharacterImageBtn');
+  if (!preview || !placeholder) return;
+
+  const source = characterImageSource();
+  const hasImage = Boolean(source);
+  preview.hidden = !hasImage;
+  placeholder.hidden = hasImage;
+  frame?.classList.toggle('has-image', hasImage);
+  if (removeButton) removeButton.hidden = !hasImage;
+  if (source) preview.src = source;
+  else preview.removeAttribute('src');
+}
+
+function readFileAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+}
+
+function loadImage(dataUrl) {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error('invalid-image'));
+    image.src = dataUrl;
+  });
+}
+
+async function cropImageFileToSquareDataUrl(file) {
+  const originalDataUrl = await readFileAsDataUrl(file);
+  const image = await loadImage(originalDataUrl);
+  const size = Math.min(image.naturalWidth || image.width, image.naturalHeight || image.height);
+  const sourceX = Math.max(0, ((image.naturalWidth || image.width) - size) / 2);
+  const sourceY = Math.max(0, ((image.naturalHeight || image.height) - size) / 2);
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+  const context = canvas.getContext('2d');
+  context.drawImage(image, sourceX, sourceY, size, size, 0, 0, size, size);
+  return canvas.toDataURL('image/png');
+}
+
+function dataUrlBase64(dataUrl) {
+  return String(dataUrl).split(',')[1] || '';
+}
+
+function openCharacterImageRemoveModal() {
+  if (!characterImageSource()) return;
+  document.getElementById('characterImageRemoveModal').hidden = false;
+}
+
+function closeCharacterImageRemoveModal() {
+  document.getElementById('characterImageRemoveModal').hidden = true;
+}
+
+function queueCharacterImageRemoval(previousPath, replacementPath = '') {
+  if (previousPath && previousPath !== replacementPath) {
+    pendingCharacterImageRemovalPath = previousPath;
+  }
+}
+
+function removeCharacterImage() {
+  queueCharacterImageRemoval(getPath(state, 'identity.image', ''));
+  pendingCharacterImage = null;
+  if (state.identity) delete state.identity.image;
+  document.getElementById('characterImageInput').value = '';
+  closeCharacterImageRemoveModal();
+  renderCharacterImage();
+}
+
+async function bindCharacterImageUpload() {
+  const picker = document.getElementById('characterImagePicker');
+  const input = document.getElementById('characterImageInput');
+  const removeButton = document.getElementById('removeCharacterImageBtn');
+  if (!input) return;
+
+  picker?.addEventListener('click', () => input.click());
+  picker?.addEventListener('keydown', event => {
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+    event.preventDefault();
+    input.click();
+  });
+  removeButton?.addEventListener('click', event => {
+    event.preventDefault();
+    event.stopPropagation();
+    openCharacterImageRemoveModal();
+  });
+  removeButton?.addEventListener('keydown', event => {
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+    event.preventDefault();
+    event.stopPropagation();
+    openCharacterImageRemoveModal();
+  });
+  document.getElementById('closeCharacterImageRemoveModal')?.addEventListener('click', closeCharacterImageRemoveModal);
+  document.getElementById('cancelCharacterImageRemoveBtn')?.addEventListener('click', closeCharacterImageRemoveModal);
+  document.getElementById('confirmCharacterImageRemoveBtn')?.addEventListener('click', removeCharacterImage);
+  document.getElementById('characterImageRemoveModal')?.addEventListener('click', event => {
+    if (event.target.id === 'characterImageRemoveModal') closeCharacterImageRemoveModal();
+  });
+
+  input.addEventListener('change', async () => {
+    const file = input.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      input.value = '';
+      alert('Selecione um arquivo de imagem.');
+      return;
+    }
+
+    try {
+      const dataUrl = await cropImageFileToSquareDataUrl(file);
+      const previousImagePath = getPath(state, 'identity.image', '');
+      pendingCharacterImage = {
+        dataUrl,
+        extension: imageExtensionFromMime(dataUrlMime(dataUrl))
+      };
+      const nextImagePath = characterImageRelativePath();
+      queueCharacterImageRemoval(previousImagePath, nextImagePath);
+      setPath(state, 'identity.image', nextImagePath);
+      renderCharacterImage();
+    } catch (err) {
+      input.value = '';
+      alert('Não foi possível carregar essa imagem.');
+    }
+  });
+}
+
+function ensureCharacterImagePath() {
+  if (!pendingCharacterImage) return '';
+  const imagePath = characterImageRelativePath();
+  setPath(state, 'identity.image', imagePath);
+  return imagePath;
+}
 
 function setPath(obj, path, value) {
   const keys = path.split('.');
@@ -785,6 +955,7 @@ function renderFields() {
     button.disabled = Boolean(aiPreviewState);
   });
   document.querySelectorAll('[data-dots]').forEach(renderDots);
+  renderCharacterImage();
   renderHealthDamage();
   updateAllDotCosts();
   renderCreationSummary();
@@ -1250,6 +1421,8 @@ function applySheetData(data, fileName = '') {
   clearAiPreview();
   clearState();
   clearLineageState();
+  pendingCharacterImage = null;
+  pendingCharacterImageRemovalPath = '';
   Object.assign(state, data);
   if (data.lineage && typeof data.lineage === 'object') {
     lineageState.name = data.lineage.name || data.identity?.lineage || '';
@@ -1316,6 +1489,7 @@ function setGithubModalStatus(message) {
 
 function sheetJson() {
   ensureHealthDamage();
+  ensureCharacterImagePath();
   ensureCreationSnapshot();
   if (lineageName()) setPath(state, 'identity.lineage', lineageName());
   delete state.lineage;
@@ -1440,7 +1614,7 @@ async function runAutosave() {
     ensureNumberDefaults();
     const content = sheetJson();
     const lineageContent = lineageHasData() && lineageName() ? lineageJson() : '';
-    const autosaveContent = `${content}\n---lineage---\n${lineageContent}`;
+    const autosaveContent = `${content}\n---lineage---\n${lineageContent}\n---image---\n${pendingCharacterImage?.dataUrl || ''}`;
     if (autosaveContent === autosaveLastSavedJson) {
       console.log('[autosave] Nenhuma alteração para enviar.');
       scheduleAutosave();
@@ -1455,8 +1629,13 @@ async function runAutosave() {
       `Autosave ficha ${fileName}`
     );
     const lineagePath = await uploadLineageToGithub(autosaveAuth, `Autosave linhagem ${lineageFileName()}`);
-    autosaveLastSavedJson = autosaveContent;
-    document.getElementById('githubUploadBtn').title = lineagePath
+    const imageRelativePath = await uploadCharacterImageToGithub(autosaveAuth, `Autosave imagem ${characterImageFileName()}`);
+    const removedImagePath = await removeCharacterImageFromGithub(autosaveAuth, imageRelativePath);
+    const imagePath = imageRelativePath ? joinGitHubPath(autosaveAuth.sheetsPath, imageRelativePath) : removedImagePath;
+    autosaveLastSavedJson = `${content}\n---lineage---\n${lineageContent}\n---image---\n`;
+    document.getElementById('githubUploadBtn').title = imagePath
+      ? `Ficha enviada para ${autosaveAuth.repo}/${sheetPath} e ${imagePath}`
+      : lineagePath
       ? `Ficha enviada para ${autosaveAuth.repo}/${sheetPath} e ${lineagePath}`
       : `Ficha enviada para ${autosaveAuth.repo}/${sheetPath}`;
     console.log(`[autosave] Ficha salva com sucesso em ${autosaveAuth.repo}/${sheetPath}.`);
@@ -1634,6 +1813,8 @@ function startNewCharacter() {
   clearAiPreview();
   clearState();
   clearLineageState();
+  pendingCharacterImage = null;
+  pendingCharacterImageRemovalPath = '';
   currentSheetFile = '';
   state.creation = {
     mode: true,
@@ -2012,11 +2193,11 @@ async function getGitHubFile(repo, branch, path, token) {
   );
 }
 
-async function putGitHubFile(repo, branch, path, content, message, token, currentSha = null) {
+async function putGitHubFileBase64(repo, branch, path, base64Content, message, token, currentSha = null) {
   const encodedPath = path.split('/').map(encodeURIComponent).join('/');
   const body = {
     message,
-    content: textToBase64(content),
+    content: base64Content,
     branch
   };
 
@@ -2029,9 +2210,50 @@ async function putGitHubFile(repo, branch, path, content, message, token, curren
   });
 }
 
+async function putGitHubFile(repo, branch, path, content, message, token, currentSha = null) {
+  return putGitHubFileBase64(repo, branch, path, textToBase64(content), message, token, currentSha);
+}
+
+async function deleteGitHubFile(repo, branch, path, message, token, currentSha) {
+  const encodedPath = path.split('/').map(encodeURIComponent).join('/');
+  return githubRequest(`https://api.github.com/repos/${repo}/contents/${encodedPath}`, token, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message, sha: currentSha, branch })
+  });
+}
+
 async function upsertGitHubFile(repo, branch, path, content, message, token) {
   const existingFile = await getGitHubFile(repo, branch, path, token);
   await putGitHubFile(repo, branch, path, content, message, token, existingFile?.sha || null);
+}
+
+async function upsertGitHubFileBase64(repo, branch, path, base64Content, message, token) {
+  const existingFile = await getGitHubFile(repo, branch, path, token);
+  await putGitHubFileBase64(repo, branch, path, base64Content, message, token, existingFile?.sha || null);
+}
+
+async function uploadCharacterImageToGithub(auth, message) {
+  if (!pendingCharacterImage) return '';
+  const imagePath = ensureCharacterImagePath();
+  const githubPath = joinGitHubPath(auth.sheetsPath, imagePath);
+  await upsertGitHubFileBase64(auth.repo, auth.branch, githubPath, dataUrlBase64(pendingCharacterImage.dataUrl), message, auth.token);
+  pendingCharacterImage = null;
+  return imagePath;
+}
+
+async function removeCharacterImageFromGithub(auth, replacementPath = '') {
+  if (!pendingCharacterImageRemovalPath || pendingCharacterImageRemovalPath === replacementPath) return '';
+  const githubPath = joinGitHubPath(auth.sheetsPath, pendingCharacterImageRemovalPath);
+  try {
+    const existingFile = await getGitHubFile(auth.repo, auth.branch, githubPath, auth.token);
+    if (existingFile?.sha) {
+      await deleteGitHubFile(auth.repo, auth.branch, githubPath, `Remove imagem ${pendingCharacterImageRemovalPath.split('/').pop()}`, auth.token, existingFile.sha);
+    }
+    return githubPath;
+  } finally {
+    pendingCharacterImageRemovalPath = '';
+  }
 }
 
 async function updateGitHubManifest(repo, branch, sheetsPath, fileName, token) {
@@ -2097,14 +2319,23 @@ async function uploadJsonToGithub(event) {
       `Atualiza ficha ${fileName}`
     );
     const lineagePath = await uploadLineageToGithub(auth, `Atualiza linhagem ${lineageFileName()}`);
-    autosaveLastSavedJson = `${sheetJson()}\n---lineage---\n${lineagePath ? lineageJson() : ''}`;
+    const imageRelativePath = await uploadCharacterImageToGithub(auth, `Atualiza imagem ${characterImageFileName()}`);
+    const removedImagePath = await removeCharacterImageFromGithub(auth, imageRelativePath);
+    const imagePath = imageRelativePath ? joinGitHubPath(sheetsPath, imageRelativePath) : removedImagePath;
+    autosaveLastSavedJson = `${sheetJson()}\n---lineage---\n${lineagePath ? lineageJson() : ''}\n---image---\n`;
     startAutosave(auth);
     document.getElementById('githubPat').value = '';
-    document.getElementById('githubUploadBtn').title = lineagePath
-      ? `Ficha enviada para ${repo}/${sheetPath} e ${lineagePath}`
-      : `Ficha enviada para ${repo}/${sheetPath}`;
-    setGithubModalStatus(lineagePath
-      ? `Ficha enviada para ${repo}/${sheetPath}. Linhagem enviada para ${repo}/${lineagePath}.`
+    document.getElementById('githubUploadBtn').title = imagePath
+      ? `Ficha enviada para ${repo}/${sheetPath} e ${imagePath}`
+      : lineagePath
+        ? `Ficha enviada para ${repo}/${sheetPath} e ${lineagePath}`
+        : `Ficha enviada para ${repo}/${sheetPath}`;
+    const extraUploads = [
+      lineagePath ? `Linhagem enviada para ${repo}/${lineagePath}` : '',
+      imagePath ? `Imagem enviada para ${repo}/${imagePath}` : ''
+    ].filter(Boolean).join('. ');
+    setGithubModalStatus(extraUploads
+      ? `Ficha enviada para ${repo}/${sheetPath}. ${extraUploads}.`
       : `Ficha enviada para ${repo}/${sheetPath}.`);
     setAutosaveFeedback('Ficha salva com sucesso.');
     console.log(`[github] Ficha salva com sucesso em ${repo}/${sheetPath}. Autosave ativado.`);
@@ -2212,6 +2443,31 @@ async function writeLocalJsonFile(fileName, content) {
   await writable.close();
 }
 
+async function writeLocalCharacterImage() {
+  if (!pendingCharacterImage) return '';
+  const imageDirHandle = await sheetsDirHandle.getDirectoryHandle('imagens', { create: true });
+  const imagePath = ensureCharacterImagePath();
+  const imageFileName = imagePath.split('/').pop();
+  const fileHandle = await imageDirHandle.getFileHandle(imageFileName, { create: true });
+  const writable = await fileHandle.createWritable();
+  await writable.write(await (await fetch(pendingCharacterImage.dataUrl)).blob());
+  await writable.close();
+  return imagePath;
+}
+
+async function removeLocalCharacterImage(replacementPath = '') {
+  if (!pendingCharacterImageRemovalPath || pendingCharacterImageRemovalPath === replacementPath) return;
+  try {
+    const imageDirHandle = await sheetsDirHandle.getDirectoryHandle('imagens');
+    const imageFileName = pendingCharacterImageRemovalPath.split('/').pop();
+    await imageDirHandle.removeEntry(imageFileName);
+  } catch (err) {
+    console.warn('[image] Nao foi possivel remover a imagem local.', err);
+  } finally {
+    pendingCharacterImageRemovalPath = '';
+  }
+}
+
 async function writeLocalLineageFile(fileName, content) {
   const lineageDirHandle = await sheetsDirHandle.getDirectoryHandle('linhagens', { create: true });
   const fileHandle = await lineageDirHandle.getFileHandle(fileName, { create: true });
@@ -2235,6 +2491,8 @@ async function saveJson() {
   try {
     await ensureSheetsDirHandle();
     await writeLocalJsonFile(fileName, content);
+    const imagePath = await writeLocalCharacterImage();
+    await removeLocalCharacterImage(imagePath);
     if (lineageShouldSave) {
       await writeLocalLineageFile(nextLineageFileName, nextLineageJson);
     }
@@ -2258,6 +2516,7 @@ function init() {
   bindLevelEditor();
   bindLineage();
   bindAiQuestions();
+  bindCharacterImageUpload();
   populatePriorityControls();
   bindPriorityControls();
   document.getElementById('newCharacterBtn').addEventListener('click', startNewCharacter);
@@ -2293,6 +2552,7 @@ function init() {
       closeGithubModal();
       closeAiModal();
       closeLineageDeathModal();
+      closeCharacterImageRemoveModal();
     }
   });
   document.getElementById('saveBtn').addEventListener('click', saveJson);

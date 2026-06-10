@@ -46,33 +46,50 @@
 
     <section class="grid identity-health">
       <div class="panel identity">
-        <label>Nome<input data-field="identity.name" placeholder="Nome do personagem" required /></label>
-        <label>Jogador(a)<input data-field="identity.player" /></label>
-        <label>Crônica
-          <select data-field="identity.chronicle">
-            <option value="Idade Média">Idade Média</option>
-            <option value="Urbana">Urbano</option>
-            <option value="Futurista">Futurista</option>
-          </select>
-        </label>
-        <label><span id="resourceLabel">Experiência</span>
-          <span class="experience-control">
-            <input id="experienceInput" data-field="identity.experience" data-number-default="0" type="number" min="0" step="1" value="0" inputmode="numeric" />
-            <button id="levelEditBtn" class="icon-btn level-edit-btn no-print" type="button" aria-label="Editar níveis" title="Editar níveis">
+        <section class="character-photo" aria-label="Imagem quadrada do personagem">
+          <div id="characterImagePicker" class="character-photo-frame" role="button" tabindex="0" aria-label="Enviar imagem do personagem" title="Enviar imagem do personagem">
+            <img id="characterImagePreview" alt="Imagem do personagem" hidden />
+            <span id="characterImagePlaceholder" class="character-image-placeholder" aria-hidden="true">
               <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="m12 20 9-9-8-8-9 9v8h8z"></path>
-                <path d="m16 7 1 1"></path>
+                <path d="M12 3v12"></path>
+                <path d="m7 8 5-5 5 5"></path>
+                <path d="M5 15v4h14v-4"></path>
               </svg>
-            </button>
-            <button id="aiIntegrationBtn" class="icon-btn ai-integration-btn no-print" type="button" aria-label="Integração de IA" title="Integração de IA">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M12 3l1.7 5.2L19 10l-5.3 1.8L12 17l-1.7-5.2L5 10l5.3-1.8L12 3z"></path>
-                <path d="M19 16l.7 2.1L22 19l-2.3.9L19 22l-.7-2.1L16 19l2.3-.9L19 16z"></path>
-                <path d="M5 15l.5 1.5L7 17l-1.5.5L5 19l-.5-1.5L3 17l1.5-.5L5 15z"></path>
-              </svg>
-            </button>
-          </span>
-        </label>
+              <span>Imagem quadrada</span>
+            </span>
+            <button id="removeCharacterImageBtn" class="character-photo-remove no-print" type="button" aria-label="Remover imagem" aria-controls="characterImageRemoveModal" title="Remover imagem" hidden>×</button>
+          </div>
+          <input id="characterImageInput" class="character-photo-input" type="file" accept="image/*" />
+        </section>
+        <div class="identity-fields">
+          <label>Nome<input data-field="identity.name" placeholder="Nome do personagem" required /></label>
+          <label>Jogador(a)<input data-field="identity.player" /></label>
+          <label>Crônica
+            <select data-field="identity.chronicle">
+              <option value="Idade Média">Idade Média</option>
+              <option value="Urbana">Urbano</option>
+              <option value="Futurista">Futurista</option>
+            </select>
+          </label>
+          <label><span id="resourceLabel">Experiência</span>
+            <span class="experience-control">
+              <input id="experienceInput" data-field="identity.experience" data-number-default="0" type="number" min="0" step="1" value="0" inputmode="numeric" />
+              <button id="levelEditBtn" class="icon-btn level-edit-btn no-print" type="button" aria-label="Editar níveis" title="Editar níveis">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="m12 20 9-9-8-8-9 9v8h8z"></path>
+                  <path d="m16 7 1 1"></path>
+                </svg>
+              </button>
+              <button id="aiIntegrationBtn" class="icon-btn ai-integration-btn no-print" type="button" aria-label="Integração de IA" title="Integração de IA">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M12 3l1.7 5.2L19 10l-5.3 1.8L12 17l-1.7-5.2L5 10l5.3-1.8L12 3z"></path>
+                  <path d="M19 16l.7 2.1L22 19l-2.3.9L19 22l-.7-2.1L16 19l2.3-.9L19 16z"></path>
+                  <path d="M5 15l.5 1.5L7 17l-1.5.5L5 19l-.5-1.5L3 17l1.5-.5L5 15z"></path>
+                </svg>
+              </button>
+            </span>
+          </label>
+        </div>
       </div>
       <div class="panel health-panel">
       <label><span class="health-title">Saúde</span>
@@ -399,6 +416,26 @@
         </div>
         <p class="modal-status" id="aiModalStatus"></p>
       </form>
+    </div>
+  </div>
+
+
+  <div class="modal-backdrop no-print" id="characterImageRemoveModal" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="characterImageRemoveModalTitle">
+      <header class="modal-header">
+        <h2 id="characterImageRemoveModalTitle">Remover imagem</h2>
+        <button id="closeCharacterImageRemoveModal" class="icon-btn modal-close" type="button" aria-label="Fechar" title="Fechar">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M18 6 6 18"></path>
+            <path d="m6 6 12 12"></path>
+          </svg>
+        </button>
+      </header>
+      <p class="modal-status">Remover a imagem ativa deste personagem?</p>
+      <div class="ai-actions">
+        <button id="confirmCharacterImageRemoveBtn" type="button">Confirmar</button>
+        <button id="cancelCharacterImageRemoveBtn" type="button">Cancelar</button>
+      </div>
     </div>
   </div>
 
