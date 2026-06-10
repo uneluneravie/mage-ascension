@@ -115,6 +115,29 @@
         <label>Habilidades Terciário<select id="abilityTertiary" data-priority-kind="abilities" data-priority-rank="tertiary"></select></label>
       </div>
       <div class="creation-summary" id="creationSummary"></div>
+      <div class="creation-lineage-actions">
+        <label>Linhagem</label>
+        <button id="newLineageBtn" class="icon-btn" type="button" aria-label="Nova linhagem" title="Nova linhagem">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 5v14"></path>
+            <path d="M5 12h14"></path>
+          </svg>
+        </button>
+        <button id="loadGitLineageBtn" class="icon-btn" type="button" aria-label="Carregar linhagem do GitHub" title="Carregar linhagem do GitHub">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M9 19c-4 1.5-4-2-5-2.5"></path>
+            <path d="M15 22v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6A4.6 4.6 0 0 0 18.7 7a4.2 4.2 0 0 0-.1-3.2s-1.1-.3-3.5 1.3a12.3 12.3 0 0 0-6.2 0C6.5 3.5 5.4 3.8 5.4 3.8A4.2 4.2 0 0 0 5.3 7 4.6 4.6 0 0 0 4 10.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V22"></path>
+          </svg>
+        </button>
+        <label class="icon-btn file-btn" aria-label="Carregar linhagem local" title="Carregar linhagem local">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 3v12"></path>
+            <path d="m7 8 5-5 5 5"></path>
+            <path d="M5 15v4h14v-4"></path>
+          </svg>
+          <input id="localLineageInput" type="file" accept="application/json,.json" />
+        </label>
+      </div>
     </section>
 
     <section class="grid spheres-advantages">
@@ -273,6 +296,8 @@
           <div data-lineage-dots="time" data-label="Tempo"></div>
           <div data-lineage-dots="life" data-label="Vida"></div>
         </div>
+        <button id="applyLineageSphereBonusBtn" class="lineage-bonus-btn no-print" type="button" disabled hidden>Herdar esferas da linhagem</button>
+        <p id="lineageBonusStatus" class="lineage-bonus-status no-print"></p>
       </div>
       <div class="panel">
         <h2>Personagens</h2>
@@ -358,6 +383,22 @@
         <button id="githubSubmitBtn" type="submit">Enviar ficha</button>
       </form>
       <p class="modal-status" id="githubModalStatus"></p>
+    </div>
+  </div>
+
+  <div class="modal-backdrop no-print" id="lineageLoadModal" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="lineageLoadModalTitle">
+      <header class="modal-header">
+        <h2 id="lineageLoadModalTitle">Carregar linhagem</h2>
+        <button id="closeLineageLoadModal" class="icon-btn modal-close" type="button" aria-label="Fechar" title="Fechar">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M18 6 6 18"></path>
+            <path d="m6 6 12 12"></path>
+          </svg>
+        </button>
+      </header>
+      <div class="sheet-list" id="gitLineageList"></div>
+      <p class="modal-status" id="lineageLoadModalStatus"></p>
     </div>
   </div>
 

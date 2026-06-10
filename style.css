@@ -124,6 +124,7 @@ button, .file-btn {
   padding: 18px;
   box-shadow: inset 0 0 30px rgba(214,173,80,.03);
   position: relative;
+  min-width: 0;
 }
 .identity {
   display: grid;
@@ -241,6 +242,37 @@ button, .file-btn {
   padding: 6px 8px;
   background: rgba(214,173,80,.06);
 }
+.creation-lineage-actions {
+  display: grid;
+  grid-template-columns: repeat(3, 34px);
+  align-items: center;
+  justify-content: start;
+  gap: 8px;
+  margin-top: 12px;
+}
+.creation-lineage-actions > label:not(.file-btn) {
+  grid-column: 1 / -1;
+  display: block;
+  margin: 0;
+}
+.creation-lineage-actions .icon-btn,
+.creation-lineage-actions .file-btn {
+  width: 34px;
+  height: 34px;
+  display: inline-grid;
+  flex: 0 0 34px;
+  place-items: center;
+  gap: 0;
+  border-radius: 10px;
+  padding: 0;
+  text-transform: none;
+  letter-spacing: 0;
+}
+#creationPanel .creation-lineage-actions > button,
+#creationPanel .creation-lineage-actions > .file-btn {
+  display: inline-grid;
+  margin: 0;
+}
 .attributes-panel,
 .abilities-panel { margin: 16px 0; }
 .attribute-columns,
@@ -312,10 +344,12 @@ textarea.large { min-height: 220px; }
   grid-template-columns: max-content max-content minmax(96px, 1fr);
   gap: 10px;
   align-items: start;
+  min-width: 0;
 }
 .health-damage-buttons {
   display: grid;
   gap: 18px;
+  min-width: 0;
 }
 .health-type-actions {
   display: grid;
@@ -527,6 +561,11 @@ textarea.large { min-height: 220px; }
   opacity: 1;
 }
 .dot.filled { background: var(--gold); }
+.dot.lineage-bonus-dot {
+  background: #b33a32;
+  border-color: #ff9a8f;
+  box-shadow: 0 0 9px rgba(255, 90, 75, .45);
+}
 .dot-row.ai-suggested .dot-label {
   color: #f8dcff;
   text-shadow: 0 0 10px rgba(217,108,255,.5);
@@ -564,6 +603,24 @@ textarea.large { min-height: 220px; }
 }
 .lineage-dot-row .dots {
   justify-content: flex-end;
+}
+.lineage-bonus-btn {
+  width: 100%;
+  margin-top: 12px;
+  border-radius: 10px;
+}
+.lineage-bonus-btn:disabled {
+  cursor: default;
+  opacity: .45;
+}
+.lineage-bonus-status {
+  min-height: 12px;
+  margin: 6px 0 0;
+  color: #ff9a8f;
+  font-size: 9px;
+  line-height: 1.25;
+  text-transform: none;
+  letter-spacing: 0;
 }
 .lineage-members {
   display: grid;
@@ -785,11 +842,33 @@ textarea.large { min-height: 220px; }
 @media (max-width: 640px) {
   .three, .two, .identity-health, .spheres-advantages, .lineage-section, .creation-controls, .attribute-columns, .ability-columns, .sphere-grid, .lineage-sphere-grid, .lineage-xp-grid { grid-template-columns: 1fr; }
   .identity {
-    grid-template-columns: minmax(86px, 104px) minmax(0, 1fr);
+    grid-template-columns: minmax(72px, 96px) minmax(0, 1fr);
     padding: 10px;
   }
   .character-photo-frame {
-    max-width: 104px;
+    max-width: 96px;
+  }
+  .health-control {
+    grid-template-columns: minmax(0, 1fr) 13px minmax(72px, max-content);
+    gap: 8px;
+  }
+  .health-type-actions {
+    grid-template-columns: minmax(0, 1fr) 26px 26px;
+  }
+  .health-damage-btn,
+  .health-heal-btn {
+    width: 26px;
+    height: 26px;
+  }
+  .health-type-label {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  .health-penalty,
+  .health-penalty.is-blocked {
+    min-width: 0;
+    padding: 7px 6px;
+    white-space: normal;
   }
   .start-actions { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .attribute-column, .ability-column, .sphere-grid .dot-row:nth-child(odd), .lineage-sphere-grid .lineage-dot-row:nth-child(odd) { border-right: 0; padding-right: 0; }

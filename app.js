@@ -456,8 +456,20 @@ function priorityPoolRemaining(path) {
   return 0;
 }
 
-function arcanaSpherePoolSpent() {
-  return Math.max(0, Number(getPath(state, 'advantages.arcana', 1)) - 1) + sumPaths(spherePaths) + Number(getPath(state, 'advantages.willpower', 0));
+function lineageSphereBonusPoints(path) {
+  const key = path.split('.')[1];
+  return Math.max(0, Number(state.creation?.lineageSphereBonus?.[key]?.points || 0));
+}
+
+function creationSpherePoolValue(path, overrides = {}) {
+  const raw = Number(Object.prototype.hasOwnProperty.call(overrides, path) ? overrides[path] : getPath(state, path, 0));
+  return Math.max(0, raw - lineageSphereBonusPoints(path));
+}
+
+function arcanaSpherePoolSpent(overrides = {}) {
+  const arcana = Number(Object.prototype.hasOwnProperty.call(overrides, 'advantages.arcana') ? overrides['advantages.arcana'] : getPath(state, 'advantages.arcana', 1));
+  const willpower = Number(Object.prototype.hasOwnProperty.call(overrides, 'advantages.willpower') ? overrides['advantages.willpower'] : getPath(state, 'advantages.willpower', 0));
+  return Math.max(0, arcana - 1) + spherePaths.reduce((sum, path) => sum + creationSpherePoolValue(path, overrides), 0) + willpower;
 }
 
 function arcanaSpherePoolRemaining() {
@@ -500,7 +512,7 @@ function creationFreebieSpend(overrides = {}) {
     sharedPoolItems.push(level <= 3 ? creationCosts['advantages.arcana'] : creationCosts['advantages.arcana']);
   }
   spherePaths.forEach(path => {
-    for (let i = 0; i < valueOf(path); i++) sharedPoolItems.push(creationCosts.spheres);
+    for (let i = 0; i < creationSpherePoolValue(path, overrides); i++) sharedPoolItems.push(creationCosts.spheres);
   });
   for (let i = 0; i < valueOf('advantages.willpower'); i++) sharedPoolItems.push(creationCosts['advantages.willpower']);
   sharedPoolItems.sort((a, b) => b - a);
@@ -518,7 +530,7 @@ function canSetCreationLevel(path, target) {
   if (!creationMode) return true;
   if (target > creationLevelLimit(path)) return false;
   if (path === 'advantages.arcana') {
-    return target >= Math.max(0, ...spherePaths.map(spherePath => Number(getPath(state, spherePath, 0))));
+    return target >= Math.max(0, ...spherePaths.map(spherePath => creationSpherePoolValue(spherePath)));
   }
   return true;
 }
@@ -556,6 +568,10 @@ function levelChangeCost(path, current, target) {
 
   for (let level = target + 1; level <= current; level++) total += multiplier * level;
   return -total;
+}
+
+function sphereNextLevelCost(currentLevel) {
+  return xpMultiplierFor('spheres.fate') * (currentLevel + 1);
 }
 
 function creationLevelChangeCost(path, current, target) {
@@ -620,6 +636,49 @@ function setDotCost(container, target = null) {
 
 function updateAllDotCosts() {
   document.querySelectorAll('[data-dots]').forEach(container => setDotCost(container));
+}
+
+function lineageHasSphereExperience() {
+  return spherePaths.some(path => lineageSphereXp(path.split('.')[1]) >= sphereNextLevelCost(0));
+}
+
+function hasAppliedLineageSphereBonus(path) {
+  return Boolean(state.creation?.lineageSphereBonus?.[path.split('.')[1]]);
+}
+
+function pendingLineageSphereBonusPaths() {
+  return spherePaths.filter(path => lineageSphereXp(path.split('.')[1]) >= sphereNextLevelCost(0) && !hasAppliedLineageSphereBonus(path));
+}
+
+function canApplyLineageSphereBonus() {
+  return creationMode
+    && arcanaSpherePoolSpent() >= 6
+    && freebies() === 0
+    && Boolean(lineageName())
+    && pendingLineageSphereBonusPaths().length > 0;
+}
+
+function setLineageBonusStatus(message = '') {
+  const status = document.getElementById('lineageBonusStatus');
+  if (status) status.textContent = message;
+}
+
+function updateLineageSphereBonusButton() {
+  const button = document.getElementById('applyLineageSphereBonusBtn');
+  if (!button) return;
+  button.hidden = !creationMode;
+  if (!creationMode) {
+    button.disabled = true;
+    setLineageBonusStatus('');
+    return;
+  }
+  const enabled = canApplyLineageSphereBonus();
+  button.disabled = !enabled;
+  button.title = !pendingLineageSphereBonusPaths().length && lineageHasSphereExperience()
+    ? 'Bônus de linhagem já aplicado'
+    : enabled
+      ? 'Aplicar níveis inteiros compráveis pela experiência da linhagem'
+      : 'Disponível após concluir a distribuição inicial, gastar os freebies e carregar uma linhagem com experiência';
 }
 
 function setLevelEditing(editable) {
@@ -697,6 +756,7 @@ function makeDots(container) {
       renderDots(container);
       renderCreationSummary();
       updateAllDotCosts();
+      updateLineageSphereBonusButton();
     });
     dots.appendChild(dot);
   }
@@ -710,12 +770,20 @@ function bindLevelEditor() {
   setLevelEditing(false);
 }
 
+function isLineageBonusDot(path, idx, value) {
+  if (!creationMode || !path.startsWith('spheres.')) return false;
+  const bonus = state.creation?.lineageSphereBonus?.[path.split('.')[1]];
+  if (!bonus) return false;
+  return idx < value && idx >= Number(bonus.from || 0) && idx < Number(bonus.to || 0);
+}
+
 function renderDots(container) {
   const path = container.dataset.dots;
   const value = Number(effectiveValue(path, 0));
   container.classList.toggle('ai-suggested', isAiSuggestionChanged(path));
   container.querySelectorAll('.dot').forEach((dot, idx) => {
     dot.classList.toggle('filled', idx < value);
+    dot.classList.toggle('lineage-bonus-dot', isLineageBonusDot(path, idx, value));
     dot.classList.toggle('ai-suggested', isAiSuggestionChanged(path) && idx < value);
   });
   setDotCost(container);
@@ -1349,6 +1417,83 @@ function renderLineage() {
   document.querySelectorAll('[data-lineage-dots]').forEach(renderLineageDots);
   document.querySelectorAll('[data-lineage-xp]').forEach(renderLineageExperience);
   renderLineageMembers();
+  updateLineageSphereBonusButton();
+}
+
+function focusLineageSection() {
+  const nameInput = document.getElementById('lineageNameInput');
+  nameInput?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  nameInput?.focus();
+}
+
+function startNewLineage() {
+  clearLineageState();
+  setPath(state, 'identity.lineage', '');
+  addLineageMember(false);
+  renderLineage();
+  focusLineageSection();
+}
+
+function lineageSphereBonusTarget(path) {
+  const key = path.split('.')[1];
+  let target = Number(getPath(state, path, 0));
+  let availableXp = Math.floor(lineageSphereXp(key));
+  const max = Number(document.querySelector(`[data-dots="${path}"]`)?.dataset.max || 5);
+
+  while (target < max) {
+    const cost = sphereNextLevelCost(target);
+    if (availableXp < cost) break;
+    availableXp -= cost;
+    target += 1;
+  }
+
+  return target;
+}
+
+function sphereLabel(path) {
+  return document.querySelector(`[data-dots="${path}"]`)?.dataset.label || path.split('.')[1];
+}
+
+function applyLineageSphereBonus() {
+  if (!canApplyLineageSphereBonus()) return;
+
+  const applied = { ...(creationSettings().lineageSphereBonus || {}) };
+  const changed = [];
+  const unchanged = [];
+
+  pendingLineageSphereBonusPaths().forEach(path => {
+    const current = Number(getPath(state, path, 0));
+    const target = lineageSphereBonusTarget(path);
+    if (target <= current) {
+      unchanged.push(sphereLabel(path));
+      return;
+    }
+    setPath(state, path, target);
+    applied[path.split('.')[1]] = {
+      from: current,
+      to: target,
+      points: target - current,
+      lineageXp: Math.floor(lineageSphereXp(path.split('.')[1]))
+    };
+    changed.push(sphereLabel(path));
+  });
+
+  creationSettings().lineageSphereBonus = applied;
+  creationSettings().lineageSphereBonusApplied = Boolean(Object.keys(applied).length) && !pendingLineageSphereBonusPaths().length;
+  document.querySelectorAll('[data-dots]').forEach(renderDots);
+  renderCreationSummary();
+  updateAllDotCosts();
+  updateLineageSphereBonusButton();
+  if (unchanged.length) {
+    setLineageBonusStatus(`Nenhuma alteração aplicada para ${unchanged.join(', ')}: atingiu o limite de experiência da esfera.`);
+  } else {
+    setLineageBonusStatus(changed.length ? `Linhagem aplicada em ${changed.join(', ')}.` : '');
+  }
+  console.log('[lineage bonus] Esferas aplicadas na criação', {
+    applied,
+    changed,
+    unchanged
+  });
 }
 
 function bindLineage() {
@@ -1358,8 +1503,10 @@ function bindLineage() {
     lineageState.name = event.target.value;
     setPath(state, 'identity.lineage', lineageState.name);
     event.target.setCustomValidity('');
+    updateLineageSphereBonusButton();
   });
   document.getElementById('addLineageMemberBtn')?.addEventListener('click', () => addLineageMember());
+  document.getElementById('applyLineageSphereBonusBtn')?.addEventListener('click', applyLineageSphereBonus);
   document.getElementById('closeLineageDeathModal')?.addEventListener('click', closeLineageDeathModal);
   document.getElementById('cancelLineageDeathBtn')?.addEventListener('click', closeLineageDeathModal);
   document.getElementById('confirmLineageDeathBtn')?.addEventListener('click', confirmLineageDeath);
@@ -1537,6 +1684,10 @@ function applySheetData(data, fileName = '', assetBaseUrl = 'fichas') {
   pendingCharacterImageRemovalPath = '';
   currentSheetAssetBaseUrl = assetBaseUrl;
   Object.assign(state, data);
+  if (state.creation) {
+    delete state.creation.lineageSphereBonusApplied;
+    delete state.creation.lineageSphereBonus;
+  }
   if (data.lineage && typeof data.lineage === 'object') {
     lineageState.name = data.lineage.name || data.identity?.lineage || '';
     lineageState.spheres = { ...(data.lineage.spheres || {}) };
@@ -1585,6 +1736,87 @@ async function loadLineageFromGithub() {
   await loadLineageFromUrl(githubSheetsRawBase());
 }
 
+function githubLineagesApiUrl() {
+  const settings = getGithubSettings();
+  const repo = settings.repo || defaultGithubRepo;
+  const branch = settings.branch || 'main';
+  const sheetsPath = cleanGitHubPath(settings.sheetsPath || 'fichas');
+  const path = joinGitHubPath(sheetsPath, 'linhagens');
+  return `https://api.github.com/repos/${repo}/contents/${path.split('/').map(encodeURIComponent).join('/')}?ref=${encodeURIComponent(branch)}`;
+}
+
+function openLineageLoadModal() {
+  document.getElementById('lineageLoadModal').hidden = false;
+  loadGitLineageList();
+}
+
+function closeLineageLoadModal() {
+  document.getElementById('lineageLoadModal').hidden = true;
+}
+
+async function loadLineageFromGithubItem(item) {
+  setLineageLoadModalStatus('Carregando linhagem...');
+  try {
+    const response = await fetch(`${item.download_url || item.url}?v=${Date.now()}`);
+    if (!response.ok) throw new Error('lineage');
+    const data = await response.json();
+    console.log('[github load] Linhagem carregada pela criação', {
+      fileName: item.name,
+      url: item.download_url || item.url,
+      data
+    });
+    applyLineageData(data);
+    closeLineageLoadModal();
+    focusLineageSection();
+  } catch (err) {
+    setLineageLoadModalStatus('Não foi possível carregar essa linhagem.');
+  }
+}
+
+async function loadGitLineageList() {
+  const list = document.getElementById('gitLineageList');
+  list.innerHTML = '';
+  setLineageLoadModalStatus('Carregando linhagens do GitHub...');
+
+  try {
+    const response = await fetch(githubLineagesApiUrl());
+    if (!response.ok) throw new Error('lineage-list');
+    const entries = (await response.json())
+      .filter(item => item.type === 'file' && /\.json$/i.test(item.name))
+      .sort((a, b) => a.name.localeCompare(b.name));
+
+    entries.forEach(item => {
+      const button = document.createElement('button');
+      const name = document.createElement('span');
+      const file = document.createElement('small');
+      button.type = 'button';
+      button.className = 'sheet-list-btn';
+      name.textContent = item.name.replace(/\.json$/i, '');
+      file.textContent = item.path || item.name;
+      button.append(name, file);
+      button.addEventListener('click', () => loadLineageFromGithubItem(item));
+      list.appendChild(button);
+    });
+
+    setLineageLoadModalStatus(entries.length ? '' : 'Nenhuma linhagem encontrada no GitHub.');
+  } catch (err) {
+    console.error('[github load] Não foi possível carregar a lista de linhagens.', err);
+    setLineageLoadModalStatus('Não foi possível carregar as linhagens do GitHub.');
+  }
+}
+
+async function loadLocalLineage(file) {
+  if (!file) return;
+  try {
+    applyLineageData(JSON.parse(await file.text()));
+    focusLineageSection();
+  } catch (err) {
+    setAutosaveFeedback('Arquivo de linhagem inválido.', true);
+  } finally {
+    document.getElementById('localLineageInput').value = '';
+  }
+}
+
 function normalizeSheetEntry(entry) {
   if (typeof entry === 'string') return { file: entry, name: entry.replace(/\.json$/i, '') };
   return {
@@ -1599,6 +1831,10 @@ function setSheetModalStatus(message) {
 
 function setGithubModalStatus(message) {
   document.getElementById('githubModalStatus').textContent = message;
+}
+
+function setLineageLoadModalStatus(message) {
+  document.getElementById('lineageLoadModalStatus').textContent = message;
 }
 
 function sheetJson() {
@@ -1659,7 +1895,7 @@ function lineageJson() {
 }
 
 function currentSheetName() {
-  return currentSheetFile || sheetFileName();
+  return characterName() ? sheetFileName() : currentSheetFile || sheetFileName();
 }
 
 function formatDuration(ms) {
@@ -1706,10 +1942,20 @@ function startAutosave(auth) {
   scheduleAutosave();
 }
 
-async function uploadSheetToGithub({ repo, branch, sheetsPath, token }, fileName, content, message) {
+async function removeGitHubSheetFile({ repo, branch, sheetsPath, token }, fileName, replacementFileName = '') {
+  if (!fileName || fileName === replacementFileName) return '';
+  const sheetPath = joinGitHubPath(sheetsPath, fileName);
+  const existingFile = await getGitHubFile(repo, branch, sheetPath, token);
+  if (!existingFile?.sha) return '';
+  await deleteGitHubFile(repo, branch, sheetPath, `Remove ficha antiga ${fileName}`, token, existingFile.sha);
+  return sheetPath;
+}
+
+async function uploadSheetToGithub({ repo, branch, sheetsPath, token }, fileName, content, message, previousFileName = '') {
   const sheetPath = joinGitHubPath(sheetsPath, fileName);
   await upsertGitHubFile(repo, branch, sheetPath, content, message, token);
-  await updateGitHubManifest(repo, branch, sheetsPath, fileName, token);
+  await updateGitHubManifest(repo, branch, sheetsPath, fileName, token, previousFileName);
+  await removeGitHubSheetFile({ repo, branch, sheetsPath, token }, previousFileName, fileName);
   currentSheetFile = fileName;
   return sheetPath;
 }
@@ -1737,11 +1983,13 @@ async function runAutosave() {
     }
 
     const fileName = currentSheetName();
+    const previousFileName = currentSheetFile && currentSheetFile !== fileName ? currentSheetFile : '';
     const sheetPath = await uploadSheetToGithub(
       autosaveAuth,
       fileName,
       content,
-      `Autosave ficha ${fileName}`
+      `Autosave ficha ${fileName}`,
+      previousFileName
     );
     const lineagePath = await uploadLineageToGithub(autosaveAuth, `Autosave linhagem ${lineageFileName()}`);
     const imageRelativePath = await uploadCharacterImageToGithub(autosaveAuth, `Autosave imagem ${characterImageFileName()}`);
@@ -1900,13 +2148,16 @@ function renderCreationSummary() {
 
   const attrRows = Object.keys(creationGroups.attributes).map(group => `${group}: ${spentInPriorityPool(creationGroups.attributes[group][0])}/${priorityBudget('attributes', group)}`);
   const abilityRows = Object.keys(creationGroups.abilities).map(group => `${group}: ${spentInPriorityPool(creationGroups.abilities[group][0])}/${priorityBudget('abilities', group)}`);
+  const lineageBonus = Object.keys(state.creation?.lineageSphereBonus || {}).length ? '<span>Linhagem aplicada</span>' : '';
   summary.innerHTML = `
     <span>Freebies: ${freebies()}</span>
     <span>Atributos ${attrRows.join(' · ')}</span>
     <span>Habilidades ${abilityRows.join(' · ')}</span>
     <span>Backgrounds ${sumPaths(backgroundPaths)}/7</span>
     <span>Arcana + Esferas + FV ${arcanaSpherePoolSpent()}/6</span>
+    ${lineageBonus}
   `;
+  updateLineageSphereBonusButton();
 }
 
 function setCreationMode(enabled) {
@@ -2379,7 +2630,7 @@ async function removeCharacterImageFromGithub(auth, replacementPath = '') {
   }
 }
 
-async function updateGitHubManifest(repo, branch, sheetsPath, fileName, token) {
+async function updateGitHubManifest(repo, branch, sheetsPath, fileName, token, previousFileName = '') {
   const manifestPath = joinGitHubPath(sheetsPath, 'index.json');
   const manifestFile = await getGitHubFile(repo, branch, manifestPath, token);
   let entries = [];
@@ -2390,7 +2641,12 @@ async function updateGitHubManifest(repo, branch, sheetsPath, fileName, token) {
     entries = [];
   }
 
-  if (!entries.some(entry => normalizeSheetEntry(entry).file === fileName)) {
+  entries = entries.filter(entry => normalizeSheetEntry(entry).file !== previousFileName);
+
+  const existingEntry = entries.find(entry => normalizeSheetEntry(entry).file === fileName);
+  if (existingEntry && typeof existingEntry === 'object') {
+    existingEntry.name = sheetTitle();
+  } else if (!existingEntry) {
     entries.push({ file: fileName, name: sheetTitle() });
   }
 
@@ -2419,6 +2675,7 @@ async function uploadJsonToGithub(event) {
   const branch = document.getElementById('githubBranch').value.trim();
   const sheetsPath = cleanGitHubPath(document.getElementById('githubSheetsPath').value || 'fichas');
   const fileName = currentSheetName();
+  const previousFileName = currentSheetFile && currentSheetFile !== fileName ? currentSheetFile : '';
 
   if (!/^[^/\s]+\/[^/\s]+$/.test(repo)) {
     setGithubModalStatus('Informe o repositorio no formato usuario/repositorio.');
@@ -2439,7 +2696,8 @@ async function uploadJsonToGithub(event) {
       auth,
       fileName,
       sheetJson(),
-      `Atualiza ficha ${fileName}`
+      `Atualiza ficha ${fileName}`,
+      previousFileName
     );
     const lineagePath = await uploadLineageToGithub(auth, `Atualiza linhagem ${lineageFileName()}`);
     const imageRelativePath = await uploadCharacterImageToGithub(auth, `Atualiza imagem ${characterImageFileName()}`);
@@ -2645,6 +2903,10 @@ function init() {
   document.getElementById('newCharacterBtn').addEventListener('click', startNewCharacter);
   document.getElementById('loadGitSheetsBtn').addEventListener('click', loadGitSheetList);
   document.getElementById('localSheetInput').addEventListener('change', e => loadLocalSheet(e.target.files[0]));
+  document.getElementById('newLineageBtn')?.addEventListener('click', startNewLineage);
+  document.getElementById('loadGitLineageBtn')?.addEventListener('click', openLineageLoadModal);
+  document.getElementById('localLineageInput')?.addEventListener('change', e => loadLocalLineage(e.target.files[0]));
+  document.getElementById('closeLineageLoadModal')?.addEventListener('click', closeLineageLoadModal);
   document.getElementById('loadBtn')?.addEventListener('click', openSheetModal);
   document.getElementById('closeSheetModal').addEventListener('click', closeSheetModal);
   document.getElementById('githubUploadBtn').addEventListener('click', openGithubModal);
@@ -2669,11 +2931,15 @@ function init() {
   document.getElementById('aiModal').addEventListener('click', e => {
     if (e.target.id === 'aiModal') closeAiModal();
   });
+  document.getElementById('lineageLoadModal')?.addEventListener('click', e => {
+    if (e.target.id === 'lineageLoadModal') closeLineageLoadModal();
+  });
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape') {
       closeSheetModal();
       closeGithubModal();
       closeAiModal();
+      closeLineageLoadModal();
       closeLineageDeathModal();
       closeLineageReviveModal();
       closeCharacterImageRemoveModal();
