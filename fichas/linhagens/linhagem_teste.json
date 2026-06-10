@@ -29,13 +29,15 @@
       "name": "Teste",
       "chronicle": "Idade Média",
       "status": "dead",
-      "dead": false
+      "dead": true,
+      "lineageContribution": {}
     },
     {
       "name": "mago lari",
       "chronicle": "Idade Média",
       "status": "alive",
-      "dead": false
+      "dead": false,
+      "lineageContribution": {}
     }
   ]
 }
