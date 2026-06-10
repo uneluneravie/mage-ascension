@@ -185,6 +185,7 @@ let pendingLineageDeathId = null;
 let pendingLineageReviveId = null;
 let pendingCharacterImage = null;
 let pendingCharacterImageRemovalPath = '';
+let currentSheetAssetBaseUrl = 'fichas';
 
 function imageExtensionFromMime(mimeType) {
   const ext = String(mimeType).split('/')[1]?.toLowerCase() || 'png';
@@ -206,10 +207,16 @@ function characterImageRelativePath() {
   return `imagens/${characterImageFileName()}`;
 }
 
+function assetUrl(baseUrl, fileName) {
+  if (/^(?:https?:|data:|blob:)/i.test(fileName)) return fileName;
+  const encodedPath = fileName.split('/').map(encodeURIComponent).join('/');
+  return `${baseUrl.replace(/\/$/, '')}/${encodedPath}`;
+}
+
 function characterImageSource() {
   if (pendingCharacterImage?.dataUrl) return pendingCharacterImage.dataUrl;
   const imagePath = getPath(state, 'identity.image', '');
-  return imagePath ? sheetUrl(imagePath) : '';
+  return imagePath ? assetUrl(currentSheetAssetBaseUrl, imagePath) : '';
 }
 
 function renderCharacterImage() {
@@ -1522,12 +1529,13 @@ function sheetUrl(fileName) {
   return `fichas/${fileName.split('/').map(encodeURIComponent).join('/')}`;
 }
 
-function applySheetData(data, fileName = '') {
+function applySheetData(data, fileName = '', assetBaseUrl = 'fichas') {
   clearAiPreview();
   clearState();
   clearLineageState();
   pendingCharacterImage = null;
   pendingCharacterImageRemovalPath = '';
+  currentSheetAssetBaseUrl = assetBaseUrl;
   Object.assign(state, data);
   if (data.lineage && typeof data.lineage === 'object') {
     lineageState.name = data.lineage.name || data.identity?.lineage || '';
@@ -1559,9 +1567,15 @@ function applyLineageData(data) {
 async function loadLineageFromUrl(baseUrl) {
   if (!lineageName()) return;
   try {
-    const response = await fetch(`${baseUrl}/linhagens/${lineageFileName().split('/').map(encodeURIComponent).join('/')}?v=${Date.now()}`);
+    const url = `${baseUrl}/linhagens/${lineageFileName().split('/').map(encodeURIComponent).join('/')}?v=${Date.now()}`;
+    const response = await fetch(url);
     if (!response.ok) return;
-    applyLineageData(await response.json());
+    const data = await response.json();
+    console.log('[github load] Linhagem carregada', {
+      url,
+      data
+    });
+    applyLineageData(data);
   } catch (err) {
     console.warn('[lineage] Nao foi possivel carregar a linhagem.', err);
   }
@@ -1787,7 +1801,7 @@ async function loadSheetFromFolder(fileName) {
   try {
     const response = await fetch(`${sheetUrl(fileName)}?v=${Date.now()}`);
     if (!response.ok) throw new Error('sheet');
-    applySheetData(await response.json(), fileName);
+    applySheetData(await response.json(), fileName, 'fichas');
     await loadLineageFromUrl('fichas');
     closeSheetModal();
   } catch (err) {
@@ -1916,6 +1930,7 @@ function startNewCharacter() {
   clearLineageState();
   pendingCharacterImage = null;
   pendingCharacterImageRemovalPath = '';
+  currentSheetAssetBaseUrl = 'fichas';
   currentSheetFile = '';
   state.creation = {
     mode: true,
@@ -1965,9 +1980,16 @@ async function loadGitSheetList() {
 async function loadSheetFromGithub(fileName) {
   setStartModalStatus('Carregando ficha...');
   try {
-    const response = await fetch(`${githubRawBase}/fichas/${fileName.split('/').map(encodeURIComponent).join('/')}?v=${Date.now()}`);
+    const url = `${githubRawBase}/fichas/${fileName.split('/').map(encodeURIComponent).join('/')}?v=${Date.now()}`;
+    const response = await fetch(url);
     if (!response.ok) throw new Error('sheet');
-    applySheetData(await response.json(), fileName);
+    const data = await response.json();
+    console.log('[github load] Ficha carregada', {
+      fileName,
+      url,
+      data
+    });
+    applySheetData(data, fileName, `${githubRawBase}/fichas`);
     await loadLineageFromGithub();
     closeStartModal();
   } catch (err) {
@@ -1978,7 +2000,7 @@ async function loadSheetFromGithub(fileName) {
 async function loadLocalSheet(file) {
   if (!file) return;
   try {
-    applySheetData(JSON.parse(await file.text()), file.name);
+    applySheetData(JSON.parse(await file.text()), file.name, 'fichas');
     closeStartModal();
   } catch (err) {
     setStartModalStatus('Arquivo JSON inválido.');
