@@ -1,0 +1,186 @@
+{
+  "creation": {
+    "mode": true,
+    "attributePriorities": {
+      "primary": "physical",
+      "secondary": "social",
+      "tertiary": "mental"
+    },
+    "abilityPriorities": {
+      "primary": "talents",
+      "secondary": "skills",
+      "tertiary": "knowledges"
+    },
+    "lineageSphereBonus": {
+      "forces": {
+        "from": 1,
+        "to": 2,
+        "points": 1,
+        "lineageXp": 17
+      }
+    },
+    "lineageSphereBonusApplied": true
+  },
+  "spheres": {
+    "fate": 1,
+    "space": 1,
+    "spirit": 1,
+    "forces": 2,
+    "matter": 1,
+    "mind": 1,
+    "death": 0,
+    "prime": 1,
+    "time": 0,
+    "life": 1
+  },
+  "advantages": {
+    "arcana": 1,
+    "willpower": 1,
+    "quintessence": 0,
+    "paradox": 0
+  },
+  "attributes": {
+    "strength": 1,
+    "dexterity": 1,
+    "stamina": 1,
+    "charisma": 1,
+    "manipulation": 1,
+    "appearance": 1,
+    "perception": 1,
+    "intelligence": 1,
+    "wits": 1
+  },
+  "abilities": {
+    "alertness": 0,
+    "athletics": 0,
+    "awareness": 0,
+    "brawl": 0,
+    "empathy": 0,
+    "expression": 0,
+    "intimidation": 0,
+    "leadership": 0,
+    "streetwise": 0,
+    "subterfuge": 0,
+    "crafts": 0,
+    "drive": 0,
+    "etiquette": 0,
+    "firearms": 0,
+    "meditation": 0,
+    "melee": 0,
+    "research": 0,
+    "stealth": 0,
+    "survival": 0,
+    "technology": 0,
+    "academics": 0,
+    "computer": 0,
+    "cosmology": 0,
+    "enigmas": 0,
+    "esoterica": 0,
+    "investigation": 0,
+    "law": 0,
+    "medicine": 0,
+    "occult": 0,
+    "science": 0
+  },
+  "identity": {
+    "experience": 0,
+    "lineage": "linhagem teste",
+    "name": "teste com o nat"
+  },
+  "health": {
+    "damage": [],
+    "level": "healthy"
+  },
+  "creationSnapshot": {
+    "capturedAt": "2026-06-10T22:56:25.892Z",
+    "identity": {
+      "experience": 0,
+      "lineage": "linhagem teste",
+      "name": "teste com o nat"
+    },
+    "attributes": {
+      "strength": 1,
+      "dexterity": 1,
+      "stamina": 1,
+      "charisma": 1,
+      "manipulation": 1,
+      "appearance": 1,
+      "perception": 1,
+      "intelligence": 1,
+      "wits": 1
+    },
+    "abilities": {
+      "alertness": 0,
+      "athletics": 0,
+      "awareness": 0,
+      "brawl": 0,
+      "empathy": 0,
+      "expression": 0,
+      "intimidation": 0,
+      "leadership": 0,
+      "streetwise": 0,
+      "subterfuge": 0,
+      "crafts": 0,
+      "drive": 0,
+      "etiquette": 0,
+      "firearms": 0,
+      "meditation": 0,
+      "melee": 0,
+      "research": 0,
+      "stealth": 0,
+      "survival": 0,
+      "technology": 0,
+      "academics": 0,
+      "computer": 0,
+      "cosmology": 0,
+      "enigmas": 0,
+      "esoterica": 0,
+      "investigation": 0,
+      "law": 0,
+      "medicine": 0,
+      "occult": 0,
+      "science": 0
+    },
+    "spheres": {
+      "fate": 1,
+      "space": 1,
+      "spirit": 1,
+      "forces": 2,
+      "matter": 1,
+      "mind": 1,
+      "death": 0,
+      "prime": 1,
+      "time": 0,
+      "life": 1
+    },
+    "advantages": {
+      "arcana": 1,
+      "willpower": 1,
+      "quintessence": 0,
+      "paradox": 0
+    },
+    "backgrounds": {},
+    "creation": {
+      "mode": true,
+      "attributePriorities": {
+        "primary": "physical",
+        "secondary": "social",
+        "tertiary": "mental"
+      },
+      "abilityPriorities": {
+        "primary": "talents",
+        "secondary": "skills",
+        "tertiary": "knowledges"
+      },
+      "lineageSphereBonus": {
+        "forces": {
+          "from": 1,
+          "to": 2,
+          "points": 1,
+          "lineageXp": 17
+        }
+      },
+      "lineageSphereBonusApplied": true
+    }
+  }
+}

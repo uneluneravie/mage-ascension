@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Todos Os Testes - Mage Ascension</title>
+  <link rel="stylesheet" href="./testes.css" />
+</head>
+<body>
+  <main>
+    <h1>Todos Os Testes</h1>
+    <p id="summary">Executando suites...</p>
+    <p id="logStatus">Log ainda nao gerado.</p>
+    <ol id="results">
+      <li class="test-row running" data-suite="unitarios">Unitarios: executando...</li>
+      <li class="test-row running" data-suite="funcionais">Funcionais: executando...</li>
+    </ol>
+    <h2>Log</h2>
+    <pre id="logOutput" class="test-log">Aguardando resultado...</pre>
+    <p><a id="downloadLog" href="#" download="test-results.json">Baixar log</a></p>
+    <iframe id="unitariosFrame" class="suite-frame" title="Testes unitarios" data-suite="unitarios"></iframe>
+    <iframe id="funcionaisFrame" class="suite-frame" title="Testes funcionais" data-suite="funcionais"></iframe>
+  </main>
+  <script>
+    const summary = document.getElementById('summary');
+    const logStatus = document.getElementById('logStatus');
+    const logOutput = document.getElementById('logOutput');
+    const downloadLog = document.getElementById('downloadLog');
+    const suiteResults = {};
+    let latestLogUrl = '';
+    const runVersion = Date.now();
+
+    document.getElementById('unitariosFrame').src = `./unitarios/index.html?v=${runVersion}`;
+    document.getElementById('funcionaisFrame').src = `./funcionais/index.html?v=${runVersion}`;
+
+    async function persistLog(log) {
+      const text = JSON.stringify(log, null, 2);
+      logOutput.textContent = text;
+      localStorage.setItem('mage-ascension-test-results', text);
+
+      if (latestLogUrl) URL.revokeObjectURL(latestLogUrl);
+      latestLogUrl = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
+      downloadLog.href = latestLogUrl;
+
+      try {
+        const response = await fetch('/test-results', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: text
+        });
+        logStatus.textContent = response.ok
+          ? 'Log gravado em testes/test-results.json.'
+          : 'Log disponível na tela e para download; servidor nao aceitou gravacao.';
+      } catch (err) {
+        logStatus.textContent = 'Log disponível na tela, localStorage e botão de download.';
+      }
+    }
+
+    function renderResults() {
+      const suites = ['unitarios', 'funcionais'];
+      let total = 0;
+      let passed = 0;
+      let failed = 0;
+
+      suites.forEach(name => {
+      const row = document.querySelector(`[data-suite="${name}"]`);
+      const payload = suiteResults[name];
+      const result = payload?.results;
+      if (!result) return;
+
+        total += result.total;
+        passed += result.passed;
+        failed += result.failed;
+        row.className = `test-row ${result.failed ? 'failed' : 'passed'}`;
+        row.textContent = `${name}: ${result.passed}/${result.total} testes passaram`;
+        if (result.failed && payload.failures?.length) {
+          const details = document.createElement('pre');
+          details.textContent = payload.failures.join('\n\n');
+          row.appendChild(details);
+        }
+      });
+
+      if (Object.keys(suiteResults).length < suites.length) {
+        summary.textContent = `Executando suites... ${Object.keys(suiteResults).length}/${suites.length}`;
+        return;
+      }
+
+      summary.textContent = `${passed}/${total} testes passaram`;
+      summary.className = failed ? 'failed' : 'passed';
+      document.title = failed ? 'FAIL Todos Os Testes' : 'PASS Todos Os Testes';
+      persistLog({
+        generatedAt: new Date().toISOString(),
+        url: window.location.href,
+        passed,
+        failed,
+        total,
+        suites: suiteResults
+      });
+    }
+
+    window.addEventListener('message', event => {
+      if (event.data?.type !== 'mage-test-results') return;
+      suiteResults[event.data.suite] = {
+        results: event.data.results,
+        failures: event.data.failures || []
+      };
+      renderResults();
+    });
+  </script>
+</body>
+</html>

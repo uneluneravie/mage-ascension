@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Testes Funcionais - Mage Ascension</title>
+  <link rel="stylesheet" href="../testes.css" />
+</head>
+<body data-suite="funcionais">
+  <main>
+    <h1>Testes Funcionais</h1>
+    <p id="summary">Executando...</p>
+    <ol id="results"></ol>
+  </main>
+  <script>
+    const testVersion = Date.now();
+    document.write(`<script src="../test-harness.js?v=${testVersion}"><\/script>`);
+    document.write(`<script src="./funcionais.test.js?v=${testVersion}"><\/script>`);
+  </script>
+</body>
+</html>

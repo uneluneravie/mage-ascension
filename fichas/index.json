@@ -6,5 +6,9 @@
   {
     "file": "baba_yaga.json",
     "name": "Baba Yaga"
+  },
+  {
+    "file": "teste_com_o_nat.json",
+    "name": "teste com o nat"
   }
 ]
