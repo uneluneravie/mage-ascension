@@ -9,6 +9,7 @@
   bindCharacterImageUpload();
   populatePriorityControls();
   bindPriorityControls();
+  setCreationMode(false);
   document.getElementById('newCharacterBtn').addEventListener('click', startNewCharacter);
   document.getElementById('loadGitSheetsBtn').addEventListener('click', loadGitSheetList);
   document.getElementById('localSheetInput').addEventListener('change', e => loadLocalSheet(e.target.files[0]));
@@ -18,6 +19,11 @@
   document.getElementById('closeLineageLoadModal')?.addEventListener('click', closeLineageLoadModal);
   document.getElementById('loadBtn')?.addEventListener('click', openSheetModal);
   document.getElementById('closeSheetModal').addEventListener('click', closeSheetModal);
+  document.getElementById('openBackgroundsModalBtn')?.addEventListener('click', openBackgroundsModal);
+  document.getElementById('closeBackgroundsModal')?.addEventListener('click', closeBackgroundsModal);
+  document.querySelectorAll('[data-backgrounds-modal-tab]').forEach(tab => {
+    tab.addEventListener('click', () => selectBackgroundsModalTab(tab.dataset.backgroundsModalTab));
+  });
   document.getElementById('githubUploadBtn').addEventListener('click', openGithubModal);
   document.getElementById('closeGithubModal').addEventListener('click', closeGithubModal);
   document.getElementById('aiIntegrationBtn').addEventListener('click', openAiModal);
@@ -34,6 +40,9 @@
   document.getElementById('sheetModal').addEventListener('click', e => {
     if (e.target.id === 'sheetModal') closeSheetModal();
   });
+  document.getElementById('backgroundsModal')?.addEventListener('click', e => {
+    if (e.target.id === 'backgroundsModal') closeBackgroundsModal();
+  });
   document.getElementById('githubModal').addEventListener('click', e => {
     if (e.target.id === 'githubModal') closeGithubModal();
   });
@@ -46,6 +55,7 @@
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape') {
       closeSheetModal();
+      closeBackgroundsModal();
       closeGithubModal();
       closeAiModal();
       closeLineageLoadModal();

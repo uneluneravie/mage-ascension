@@ -78,10 +78,28 @@ test('sphereNextLevelCost usa multiplicador de esfera', () => withApp(win => {
 test('xpMultiplierFor reconhece grupos e vantagens', () => withApp(win => {
   assert.equal(win.xpMultiplierFor('attributes.strength'), 4);
   assert.equal(win.xpMultiplierFor('abilities.alertness'), 2);
-  assert.equal(win.xpMultiplierFor('backgrounds.avatar'), 1);
+  assert.equal(win.xpMultiplierFor('backgrounds.allies'), 1);
   assert.equal(win.xpMultiplierFor('spheres.time'), 7);
   assert.equal(win.xpMultiplierFor('advantages.arcana'), 8);
   assert.equal(win.xpMultiplierFor('notes'), 0);
+}));
+
+test('backgroundPaths usa antecedentes traduzidos em ordem alfabetica', () => withApp(win => {
+  assert.deepEqual(appVar(win, 'backgroundPaths'), [
+    'backgrounds.allies',
+    'backgrounds.backup',
+    'backgrounds.contacts',
+    'backgrounds.spies',
+    'backgrounds.fame',
+    'backgrounds.influence',
+    'backgrounds.wonder',
+    'backgrounds.mentor',
+    'backgrounds.patron',
+    'backgrounds.resources',
+    'backgrounds.sanctum',
+    'backgrounds.dream',
+    'backgrounds.pastLives'
+  ]);
 }));
 
 test('setExperience nunca deixa experiencia negativa', () => withApp(win => {
@@ -103,8 +121,8 @@ test('startNewCharacter aplica defaults de criacao', () => withApp(win => {
   const state = appState(win);
   assert.equal(win.getPath(state, 'creation.mode'), true);
   assert.equal(win.getPath(state, 'identity.experience'), 15);
-  assert.equal(win.getPath(state, 'attributes.strength'), 1);
-  assert.equal(win.getPath(state, 'attributes.wits'), 1);
+  assert.equal(win.getPath(state, 'attributes.strength'), 0);
+  assert.equal(win.getPath(state, 'attributes.wits'), 0);
   assert.equal(win.getPath(state, 'advantages.arcana'), 1);
   assert.deepEqual(win.getPath(state, 'health.damage'), []);
 }));
@@ -119,8 +137,8 @@ test('creationFreebieSpend cobra atributo acima do pool', () => withApp(win => {
   win.setPath(appState(win), 'attributes.strength', 5);
   win.setPath(appState(win), 'attributes.dexterity', 4);
   win.setPath(appState(win), 'attributes.stamina', 3);
-  assert.equal(win.spentInPriorityPool('attributes.strength'), 9);
-  assert.equal(win.creationFreebieSpend(), 10);
+  assert.equal(win.spentInPriorityPool('attributes.strength'), 12);
+  assert.equal(win.creationFreebieSpend(), 25);
 }));
 
 test('creationFreebieSpend cobra habilidades acima do pool', () => withApp(win => {
@@ -131,6 +149,21 @@ test('creationFreebieSpend cobra habilidades acima do pool', () => withApp(win =
   win.setPath(appState(win), 'abilities.brawl', 3);
   win.setPath(appState(win), 'abilities.empathy', 3);
   assert.equal(win.creationFreebieSpend(), 4);
+}));
+
+test('creationFreebieSpend cobra backgrounds acima do pool inicial', () => withApp(win => {
+  win.startNewCharacter();
+  win.setPath(appState(win), 'backgrounds.allies', 3);
+  win.setPath(appState(win), 'backgrounds.contacts', 3);
+  win.setPath(appState(win), 'backgrounds.resources', 2);
+  assert.equal(win.creationFreebieSpend(), 1);
+}));
+
+test('creationLevelLimit limita backgrounds a 3 na criacao', () => withApp(win => {
+  win.startNewCharacter();
+  assert.equal(win.creationLevelLimit('backgrounds.allies'), 3);
+  assert.equal(win.canSetCreationLevel('backgrounds.allies', 4), false);
+  assert.equal(win.canSetCreationLevel('backgrounds.allies', 3), true);
 }));
 
 test('creationLevelLimit limita esferas pela Arcana', () => withApp(win => {
@@ -271,6 +304,31 @@ test('sheetJson normaliza saude, linhagem e creationSnapshot', () => withApp(win
   assert.equal(json.identity.lineage, 'Casa Teste');
   assert.equal(Boolean(json.creationSnapshot), true);
   assert.equal(Object.prototype.hasOwnProperty.call(json, 'lineage'), false);
+}));
+
+test('sheetJson preserva justificativas de backgrounds no snapshot', () => withApp(win => {
+  resetApp(win, {
+    identity: { name: 'Teste' },
+    backgrounds: { allies: 1 },
+    backgroundJustifications: { allies: 'Jornalista amigo.' },
+    aspirations: 'Achar um aliado.',
+    obsession: 'Entender a visao.',
+    world: {
+      magic: { belief: 'Porque viu.' },
+      reality: { profession: 'Livreira.' }
+    }
+  });
+  const json = JSON.parse(win.sheetJson());
+  assert.equal(json.backgroundJustifications.allies, 'Jornalista amigo.');
+  assert.equal(json.creationSnapshot.backgroundJustifications.allies, 'Jornalista amigo.');
+  assert.equal(json.aspirations, 'Achar um aliado.');
+  assert.equal(json.obsession, 'Entender a visao.');
+  assert.equal(json.creationSnapshot.aspirations, 'Achar um aliado.');
+  assert.equal(json.creationSnapshot.obsession, 'Entender a visao.');
+  assert.equal(json.world.magic.belief, 'Porque viu.');
+  assert.equal(json.world.reality.profession, 'Livreira.');
+  assert.equal(json.creationSnapshot.world.magic.belief, 'Porque viu.');
+  assert.equal(json.creationSnapshot.world.reality.profession, 'Livreira.');
 }));
 
 test('normalizeAiSuggestion remove _xpAnalysis', () => withApp(win => {

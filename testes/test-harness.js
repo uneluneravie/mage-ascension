@@ -73,6 +73,7 @@ function change(element, value) {
 
 function appFrameHtml() {
   const baseUrl = new URL('../../', window.location.href).href;
+  const appVersion = Date.now();
   return `<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -80,26 +81,26 @@ function appFrameHtml() {
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Ficha Testada</title>
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style.css?v=${appVersion}" />
 </head>
 <body>
-  <script src="scripts/components/sheet-shell.js"></script>
+  <script src="scripts/components/sheet-shell.js?v=${appVersion}"></script>
   <script>renderAppShell();</script>
-  <script src="prompt.js"></script>
-  <script src="scripts/config.js"></script>
-  <script src="scripts/character-image.js"></script>
-  <script src="scripts/state-utils.js"></script>
-  <script src="scripts/dots.js"></script>
-  <script src="scripts/health-fields.js"></script>
-  <script src="scripts/lineage.js"></script>
-  <script src="scripts/sheets-serialization.js"></script>
-  <script src="scripts/autosave.js"></script>
-  <script src="scripts/sheet-loading-creation.js"></script>
-  <script src="scripts/github-ui.js"></script>
-  <script src="scripts/ai.js"></script>
-  <script src="scripts/integrations/github.js"></script>
-  <script src="scripts/integrations/local-files.js"></script>
-  <script src="scripts/bootstrap.js"></script>
+  <script src="prompt.js?v=${appVersion}"></script>
+  <script src="scripts/config.js?v=${appVersion}"></script>
+  <script src="scripts/character-image.js?v=${appVersion}"></script>
+  <script src="scripts/state-utils.js?v=${appVersion}"></script>
+  <script src="scripts/dots.js?v=${appVersion}"></script>
+  <script src="scripts/health-fields.js?v=${appVersion}"></script>
+  <script src="scripts/lineage.js?v=${appVersion}"></script>
+  <script src="scripts/sheets-serialization.js?v=${appVersion}"></script>
+  <script src="scripts/autosave.js?v=${appVersion}"></script>
+  <script src="scripts/sheet-loading-creation.js?v=${appVersion}"></script>
+  <script src="scripts/github-ui.js?v=${appVersion}"></script>
+  <script src="scripts/ai.js?v=${appVersion}"></script>
+  <script src="scripts/integrations/github.js?v=${appVersion}"></script>
+  <script src="scripts/integrations/local-files.js?v=${appVersion}"></script>
+  <script src="scripts/bootstrap.js?v=${appVersion}"></script>
 </body>
 </html>`;
 }

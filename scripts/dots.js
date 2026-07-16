@@ -25,6 +25,9 @@ function makeDots(container) {
   const symbol = sphereSymbols[path] || '';
   container.className = 'dot-row';
   container.innerHTML = '<span class="dot-label"></span><span class="xp-cost"></span><span class="dots"></span>';
+  if (path.startsWith('backgrounds.')) {
+    container.classList.add('background-dot-row');
+  }
   const labelElement = container.querySelector('.dot-label');
   if (symbol) {
     const symbolElement = document.createElement('span');
@@ -77,6 +80,16 @@ function makeDots(container) {
     });
     dots.appendChild(dot);
   }
+  if (path.startsWith('backgrounds.')) {
+    const key = path.split('.')[1];
+    const justification = document.createElement('textarea');
+    justification.className = 'background-justification';
+    justification.dataset.field = `backgroundJustifications.${key}`;
+    justification.placeholder = backgroundJustificationHints[key] || 'Descreva de onde esse Antecedente veio.';
+    justification.setAttribute('aria-label', `Justificativa de ${label}`);
+    justification.hidden = true;
+    container.appendChild(justification);
+  }
   renderDots(container);
 }
 
@@ -103,5 +116,9 @@ function renderDots(container) {
     dot.classList.toggle('lineage-bonus-dot', isLineageBonusDot(path, idx, value));
     dot.classList.toggle('ai-suggested', isAiSuggestionChanged(path) && idx < value);
   });
+  if (path.startsWith('backgrounds.')) {
+    const justification = container.querySelector('.background-justification');
+    if (justification) justification.hidden = value < 1;
+  }
   setDotCost(container);
 }

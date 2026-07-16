@@ -14,11 +14,41 @@ O campo `Nome` do personagem e obrigatorio para salvar localmente ou enviar para
 
 Para fichas novas, o arquivo e criado como `nome_do_personagem.json`, em snake_case minusculo. Para fichas carregadas pelo modal, o mesmo arquivo JSON e atualizado.
 
+## Estrutura visual
+
+O `index.html` carrega templates HTML em `scripts/components/` antes de iniciar a aplicacao. O arquivo `scripts/components/sheet-shell.js` apenas compoe esses templates e injeta o shell visual; os blocos editaveis ficam separados em `header-template.js`, `sheet-sections.js`, `creation-world-template.js` e `modals-template.js`.
+
 ## Criacao de personagem
 
-Ao criar um personagem novo, o campo de experiencia vira `Freebies` e comeca em 15. O app habilita os controles de prioridades de Atributos e Habilidades, aplica os pontos iniciais de Atributos, Arcana e Saude, e calcula custos de compra por prioridade, pontos iniciais e Freebies.
+Ao criar um personagem novo, o campo de experiencia vira `Freebies` e comeca em 15. O app habilita os controles de prioridades de Atributos e Habilidades, inicia Atributos em 0, aplica os pontos iniciais de Arcana e Saude, e calcula custos de compra por prioridade, pontos iniciais e Freebies.
 
-Backgrounds usam pontos de bolinha e tambem entram no calculo de criacao.
+Durante a criacao, a ficha mostra apenas as areas necessarias para distribuir pontos e definir conceitos iniciais. Anotacoes, Paradigma/Foco/Instrumentos e Convento ficam ocultos ate a criacao terminar.
+
+A secao `Quem voce e no mundo` aparece durante a criacao com duas colunas de perguntas: `Como lida com magia` e `Como lida com a realidade`. As respostas sao salvas em `world.magic.*` e `world.reality.*`. Depois da criacao, esses campos ficam disponiveis em uma segunda aba dentro do modal de Antecedentes.
+
+Antecedentes usam pontos de bolinha e tambem entram no calculo de criacao. Durante a criacao, o personagem recebe 7 pontos de Antecedentes para distribuir livremente; nenhum Antecedente pode comecar acima de 3 pontos. Pontos acima do pool inicial custam 1 Freebie por ponto.
+
+Quando um Antecedente tem pelo menos 1 ponto, a ficha abre um campo de justificativa abaixo dele para explicar de onde aquele recurso veio. Esses textos sao salvos em `backgroundJustifications`, separados dos valores numericos de `backgrounds`.
+
+Na area de Antecedentes, a ficha tambem registra `aspirations` e `obsession`: Aspirações descrevem coisas que a bruxa deseja a curto prazo, e Obsessão / vício descreve coisas que a bruxa anseia de forma compulsiva a longo prazo.
+
+Depois que a criacao termina, os pontos de Antecedentes ficam bloqueados: eles nao podem ser aumentados ou reduzidos por XP no modo de edicao. A secao de Antecedentes sai da ficha principal e passa a ser acessada por um botao ao lado de `Cronica`, abrindo um modal. As justificativas continuam editaveis para detalhar os Antecedentes ja comprados.
+
+Antecedentes disponiveis, em ordem alfabetica:
+
+- Aliados: amigos e aliados mundanos que ajudam o personagem.
+- Apoio: apoio de uma organizacao.
+- Contatos: fontes de informacao.
+- Espioes: rede de informantes.
+- Fama: fama publica.
+- Influencia: poder sobre instituicoes e grupos.
+- Maravilha: artefato magico significativo.
+- Mentor: professor ou guia experiente.
+- Patrono: um protetor poderoso.
+- Recursos: dinheiro e patrimonio.
+- Refugio: refugio ou base.
+- Sonho: ligacao com sonhos, visoes e o inconsciente coletivo.
+- Vidas Passadas: conhecimento de vidas passadas.
 
 No GitHub Pages, o navegador nao consegue gravar diretamente no repositorio hospedado. O app usa a File System Access API para gravar em uma pasta local `fichas`; na primeira vez, o navegador pode pedir permissao para essa pasta. Depois disso, a permissao fica salva no navegador e o botao de salvar atualiza/cria o JSON automaticamente.
 

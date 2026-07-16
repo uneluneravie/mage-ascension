@@ -139,6 +139,16 @@ button, .file-btn {
   gap: 8px;
   min-width: 0;
 }
+.chronicle-control {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 32px;
+  gap: 8px;
+  align-items: center;
+}
+.backgrounds-modal-btn {
+  width: 32px;
+  height: 32px;
+}
 .character-photo {
   display: grid;
 }
@@ -291,6 +301,29 @@ button, .file-btn {
 .ability-column:last-child {
   border-right: 0;
   padding-right: 0;
+}
+.creation-world-panel {
+  margin: 16px 0;
+}
+.creation-world-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+.creation-world-column {
+  min-width: 0;
+  display: grid;
+  gap: 10px;
+  border-right: 1px dashed rgba(214,173,80,.18);
+  padding-right: 18px;
+}
+.creation-world-column:last-child {
+  border-right: 0;
+  padding-right: 0;
+}
+.creation-world-column textarea {
+  min-height: 48px;
+  resize: vertical;
 }
 h3 {
   margin: 0 0 8px;
@@ -676,6 +709,57 @@ textarea.large { min-height: 220px; }
   gap: 0;
   margin-bottom: 12px;
 }
+.background-dot-row .background-justification {
+  grid-column: 1 / -1;
+  min-height: 54px;
+  margin: 4px 0 8px;
+  resize: vertical;
+}
+.background-dot-row .background-justification[hidden] {
+  display: none;
+}
+.background-extra-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 12px 0 4px;
+}
+.background-extra-fields textarea {
+  min-height: 86px;
+  resize: vertical;
+}
+.backgrounds-modal-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  margin-bottom: 14px;
+  padding: 4px;
+  border: 1px solid rgba(214,173,80,.2);
+  border-radius: 10px;
+  background: rgba(16,13,8,.45);
+}
+.backgrounds-modal-tab {
+  min-height: 34px;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 10px;
+  overflow-wrap: anywhere;
+}
+.backgrounds-modal-tab.is-active {
+  color: #100d08;
+  background: var(--gold);
+  border-color: var(--gold);
+}
+.backgrounds-modal-panel[hidden] {
+  display: none;
+}
+.backgrounds-modal-world {
+  margin-top: 4px;
+}
+.backgrounds-modal-world textarea {
+  min-height: 52px;
+  resize: vertical;
+}
 .modal-backdrop {
   position: fixed;
   inset: 0;
@@ -840,7 +924,7 @@ textarea.large { min-height: 220px; }
   font-size: 10px;
 }
 @media (max-width: 640px) {
-  .three, .two, .identity-health, .spheres-advantages, .lineage-section, .creation-controls, .attribute-columns, .ability-columns, .sphere-grid, .lineage-sphere-grid, .lineage-xp-grid { grid-template-columns: 1fr; }
+  .three, .two, .identity-health, .spheres-advantages, .lineage-section, .creation-controls, .attribute-columns, .ability-columns, .creation-world-columns, .sphere-grid, .lineage-sphere-grid, .lineage-xp-grid { grid-template-columns: 1fr; }
   .identity {
     grid-template-columns: minmax(72px, 96px) minmax(0, 1fr);
     padding: 10px;
@@ -875,5 +959,8 @@ textarea.large { min-height: 220px; }
   .sphere-grid .dot-row:nth-child(odd)::after, .lineage-sphere-grid .lineage-dot-row:nth-child(odd)::after { display: none; }
   .hero { align-items: flex-start; flex-direction: column; }
   .actions { justify-content: flex-start; }
+}
+.backgrounds-modal {
+  width: min(560px, 100%);
 }
 @media print { .no-print { display: none; } body { background: #080605; } .sheet { width: 100%; margin: 0; } }

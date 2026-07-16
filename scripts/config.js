@@ -101,17 +101,19 @@ const fieldDescriptions = {
   'advantages.willpower': 'Determinação mental usada para resistir ou superar desafios.',
   'advantages.quintessence': 'Energia mágica primordial usada para alimentar efeitos.',
   'advantages.paradox': 'Acúmulo da reação da realidade contra magia impossível.',
-  'backgrounds.avatar': 'Ligação com seu Avatar.',
-  'backgrounds.arcane': 'Dificuldade de ser notado.',
-  'backgrounds.contacts': 'Informantes e pessoas que sabem coisas.',
-  'backgrounds.destiny': 'Destino importante ligado ao personagem.',
-  'backgrounds.dream': 'Fonte de inspiração, visões e orientação.',
-  'backgrounds.influence': 'Poder político, social ou institucional.',
-  'backgrounds.library': 'Biblioteca mundana ou mágica.',
-  'backgrounds.mentor': 'Professor, mestre ou guia.',
-  'backgrounds.node': 'Fonte de Quintessência.',
-  'backgrounds.resources': 'Dinheiro, bens e acesso material.',
-  'backgrounds.wonder': 'Item mágico ou maravilha desperta.'
+  'backgrounds.allies': 'Amigos e aliados mundanos que ajudam o personagem.',
+  'backgrounds.backup': 'Apoio de uma organização.',
+  'backgrounds.contacts': 'Fontes de informação.',
+  'backgrounds.spies': 'Rede de informantes.',
+  'backgrounds.fame': 'Fama pública.',
+  'backgrounds.influence': 'Poder sobre instituições e grupos.',
+  'backgrounds.wonder': 'Artefato mágico significativo.',
+  'backgrounds.mentor': 'Professor ou guia experiente.',
+  'backgrounds.patron': 'Um protetor poderoso.',
+  'backgrounds.resources': 'Dinheiro e patrimônio.',
+  'backgrounds.sanctum': 'Refúgio ou base.',
+  'backgrounds.dream': 'Ligação com sonhos, visões e o inconsciente coletivo.',
+  'backgrounds.pastLives': 'Conhecimento de vidas passadas.'
 };
 const sphereSymbols = {
   'spheres.fate': '✦',
@@ -124,6 +126,21 @@ const sphereSymbols = {
   'spheres.prime': '✶',
   'spheres.time': '◴',
   'spheres.life': '✚'
+};
+const backgroundJustificationHints = {
+  allies: 'Ex.: jornalista amigo, policial honesto, médico, advogado, hacker.',
+  backup: 'Ex.: sindicato, universidade, corporação, convenção tecnocrática.',
+  contacts: 'Ex.: delegado, jornalista, funcionário público, antiquário.',
+  spies: 'Ex.: moradores de rua, funcionários, detetives.',
+  fame: 'Ex.: músico, atleta, influenciador, cientista.',
+  influence: 'Ex.: política, polícia, mídia, universidade.',
+  wonder: 'Ex.: grimório, amuleto, espelho mágico.',
+  mentor: 'Ex.: mestre da tradição, professor, ocultista veterano.',
+  patron: 'Ex.: líder da tradição, aristocrata, espírito poderoso.',
+  resources: 'Ex.: emprego, investimentos, herança, empresa.',
+  sanctum: 'Ex.: apartamento, laboratório, mansão, cabana.',
+  dream: 'Ex.: sonhos proféticos, pesadelos recorrentes, conexão com arquétipos.',
+  pastLives: 'Ex.: magos antigos, guerreiros, estudiosos.'
 };
 const xpMultipliers = {
   attributes: 4,
@@ -161,7 +178,7 @@ const creationDefaults = {
   attributePriorities: { primary: 'physical', secondary: 'social', tertiary: 'mental' },
   abilityPriorities: { primary: 'talents', secondary: 'skills', tertiary: 'knowledges' }
 };
-const backgroundPaths = ['backgrounds.avatar', 'backgrounds.arcane', 'backgrounds.contacts', 'backgrounds.destiny', 'backgrounds.dream', 'backgrounds.influence', 'backgrounds.library', 'backgrounds.mentor', 'backgrounds.node', 'backgrounds.resources', 'backgrounds.wonder'];
+const backgroundPaths = ['backgrounds.allies', 'backgrounds.backup', 'backgrounds.contacts', 'backgrounds.spies', 'backgrounds.fame', 'backgrounds.influence', 'backgrounds.wonder', 'backgrounds.mentor', 'backgrounds.patron', 'backgrounds.resources', 'backgrounds.sanctum', 'backgrounds.dream', 'backgrounds.pastLives'];
 const spherePaths = ['spheres.fate', 'spheres.space', 'spheres.spirit', 'spheres.forces', 'spheres.matter', 'spheres.mind', 'spheres.death', 'spheres.prime', 'spheres.time', 'spheres.life'];
 const sheetsManifest = 'fichas/index.json';
 const githubRawBase = 'https://raw.githubusercontent.com/uneluneravie/mage-ascension/main';

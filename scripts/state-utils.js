@@ -72,7 +72,7 @@ function spentInPriorityPool(path) {
   if (path.startsWith('attributes.')) {
     const group = pathGroup(path, creationGroups.attributes);
     const paths = creationGroups.attributes[group] || [];
-    return Math.max(0, sumPaths(paths) - paths.length);
+    return sumPaths(paths);
   }
   if (path.startsWith('abilities.')) {
     const group = pathGroup(path, creationGroups.abilities);
@@ -130,8 +130,8 @@ function creationFreebieSpend(overrides = {}) {
   let total = 0;
 
   Object.entries(creationGroups.attributes).forEach(([group, paths]) => {
-    const extra = paths.reduce((sum, path) => sum + Math.max(0, valueOf(path) - 1), 0);
-    total += Math.max(0, extra - priorityBudget('attributes', group)) * creationCosts.attributes;
+    const spent = paths.reduce((sum, path) => sum + valueOf(path), 0);
+    total += Math.max(0, spent - priorityBudget('attributes', group)) * creationCosts.attributes;
   });
 
   Object.entries(creationGroups.abilities).forEach(([group, paths]) => {
@@ -159,6 +159,7 @@ function creationFreebieSpend(overrides = {}) {
 }
 
 function creationLevelLimit(path) {
+  if (path.startsWith('backgrounds.')) return 3;
   if (path.startsWith('spheres.')) return Number(getPath(state, 'advantages.arcana', 1));
   return Number(document.querySelector(`[data-dots="${path}"]`)?.dataset.max || 5);
 }
@@ -189,7 +190,10 @@ function xpMultiplierFor(path) {
 }
 
 function isDotSectionEditable(container) {
-  return levelEditMode && Boolean(xpMultiplierFor(container.dataset.dots));
+  const path = container.dataset.dots;
+  if (!levelEditMode) return false;
+  if (path.startsWith('backgrounds.')) return creationMode;
+  return Boolean(xpMultiplierFor(path));
 }
 
 function levelChangeCost(path, current, target) {
@@ -247,7 +251,7 @@ function setDotCost(container, target = null) {
   const cost = container.querySelector('.xp-cost');
   if (!cost) return;
 
-  if (aiPreviewState || !levelEditMode || !xpMultiplierFor(container.dataset.dots)) {
+  if (aiPreviewState || !isDotSectionEditable(container)) {
     cost.textContent = '';
     return;
   }

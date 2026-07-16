@@ -237,6 +237,10 @@ function creationSnapshotData() {
     spheres: cloneData(getPath(state, 'spheres', {})),
     advantages: cloneData(getPath(state, 'advantages', {})),
     backgrounds: cloneData(getPath(state, 'backgrounds', {})),
+    backgroundJustifications: cloneData(getPath(state, 'backgroundJustifications', {})),
+    aspirations: getPath(state, 'aspirations', ''),
+    obsession: getPath(state, 'obsession', ''),
+    world: cloneData(getPath(state, 'world', {})),
     creation: cloneData(getPath(state, 'creation', {}))
   };
 }

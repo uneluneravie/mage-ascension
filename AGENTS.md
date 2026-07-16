@@ -17,7 +17,12 @@ A prioridade e reduzir acoplamento sem alterar regras da ficha, formato dos JSON
 
 - `index.html`: casca da pagina; carrega o shell visual, prompt e modulos JS em ordem.
 - `app.js`: ponte de compatibilidade para ferramentas antigas; a aplicacao real fica em `scripts/`.
-- `scripts/components/`: componentes e modulos visuais.
+- `scripts/components/`: componentes e modulos visuais. O shell e composto por templates HTML em JavaScript sem build step:
+  - `header-template.js`: cabecalho e acoes principais.
+  - `sheet-sections.js`: identidade, saude, criacao, esferas, atributos, habilidades, antecedentes, notas, convento e linhagem.
+  - `creation-world-template.js`: secao `Quem voce e no mundo`.
+  - `modals-template.js`: autosave e modais.
+  - `sheet-shell.js`: composicao final e `renderAppShell()`.
 - `scripts/integrations/`: integracoes externas e persistencia fora do fluxo principal.
 - `scripts/bootstrap.js`: inicializacao e binding final da aplicacao.
 - `scripts/config.js`: estado global e constantes compartilhadas.
@@ -106,7 +111,7 @@ Preserve estes contratos durante o refactor:
 
 - Formato dos JSONs das fichas.
 - Formato dos JSONs de linhagem.
-- Campos `identity`, `attributes`, `abilities`, `spheres`, `advantages`, `backgrounds`, `health`, `creation`, `creationSnapshot`, `ai`.
+- Campos `identity`, `attributes`, `abilities`, `spheres`, `advantages`, `backgrounds`, `backgroundJustifications`, `aspirations`, `obsession`, `world`, `health`, `creation`, `creationSnapshot`, `ai`.
 - Compatibilidade com `health.level` legado.
 - Compatibilidade com linhagem embutida legada em `state.lineage`.
 - Manifestos `fichas/index.json` e `fichas/linhagens/index.json`.
@@ -115,6 +120,34 @@ Preserve estes contratos durante o refactor:
 - Fluxos de salvar local, upload GitHub, autosave, preview de IA, morte/reviver linhagem e bonus de linhagem.
 
 Se algum contrato precisar mudar, implemente migracao e testes antes de alterar o formato persistido.
+
+## Antecedentes Na Criacao
+
+A criacao de personagem usa 7 pontos iniciais de Antecedentes. Nenhum Antecedente deve comecar acima de 3 pontos, salvo regra futura explicita da cronica. Pontos acima do pool inicial custam 1 Freebie por ponto. A secao de Antecedentes deve aparecer logo abaixo da secao de Habilidades.
+
+Depois da criacao, Antecedentes nao sao compraveis por XP e suas bolinhas devem ficar bloqueadas no modo de edicao normal. A secao de Antecedentes nao deve aparecer na ficha principal de um personagem ja criado; os Antecedentes devem ficar em um modal aberto por um botao ao lado do campo `Cronica` na identidade. Apenas os textos de justificativa continuam editaveis quando o Antecedente tiver pelo menos 1 ponto.
+
+Cada Antecedente com pelo menos 1 ponto deve mostrar uma justificativa textual abaixo da linha de bolinhas. Os pontos continuam em `backgrounds.*`; as justificativas devem ser persistidas separadamente em `backgroundJustifications.*` para preservar os valores numericos existentes.
+
+A area de Antecedentes tambem deve exibir campos livres editaveis para Aspirações (`aspirations`) e Obsessão / vício (`obsession`). Aspirações usa a descricao de hover "coisas que a bruxa deseja a curto prazo"; Obsessão / vício usa "coisas que a bruxa anseia de forma compulsiva a longo prazo". Esses campos aparecem na secao de criacao e no modal de personagem ja criado, e devem entrar em `creationSnapshot`.
+
+A secao `Quem voce e no mundo` deve aparecer na criacao e, depois que o personagem ja foi criado, seus campos devem ficar disponiveis em uma segunda aba dentro do modal de Antecedentes. As respostas usam `world.magic.*` e `world.reality.*` e devem continuar editaveis no modal.
+
+Antecedentes disponiveis na UI, em ordem alfabetica e com nomes em portugues:
+
+- Aliados (`backgrounds.allies`)
+- Apoio (`backgrounds.backup`)
+- Contatos (`backgrounds.contacts`)
+- Espioes (`backgrounds.spies`)
+- Fama (`backgrounds.fame`)
+- Influencia (`backgrounds.influence`)
+- Maravilha (`backgrounds.wonder`)
+- Mentor (`backgrounds.mentor`)
+- Patrono (`backgrounds.patron`)
+- Recursos (`backgrounds.resources`)
+- Refugio (`backgrounds.sanctum`)
+- Sonho (`backgrounds.dream`)
+- Vidas Passadas (`backgrounds.pastLives`)
 
 ## Diretrizes De Teste Para Refactor
 

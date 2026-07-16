@@ -22,16 +22,82 @@ async function withApp(fn) {
   }
 }
 
-function dot(doc, path, index) {
-  return doc.querySelector(`[data-dots="${path}"] .dot:nth-child(${index})`);
+function dot(root, path, index) {
+  return root.querySelector(`[data-dots="${path}"] .dot:nth-child(${index})`);
 }
 
 test('inicializacao renderiza controles principais', () => withApp((win, doc) => {
-  assert.equal(doc.querySelectorAll('[data-dots]').length, 51);
-  assert.equal(doc.querySelectorAll('[data-dots] .dot').length, 265);
+  assert.equal(doc.querySelectorAll('[data-dots]').length, 77);
+  assert.equal(doc.querySelectorAll('[data-dots] .dot').length, 395);
   assert.equal(doc.querySelectorAll('#healthBoxes .health-box').length, 7);
   assert.equal(doc.getElementById('startModal').hidden, false);
+  assert.equal(doc.querySelector('.backgrounds-panel').hidden, true);
+  assert.equal(doc.getElementById('openBackgroundsModalBtn').hidden, false);
   assert.includes(doc.getElementById('healthStatus').textContent, 'Saud');
+}));
+
+test('antecedentes aparecem traduzidos em ordem alfabetica', () => withApp((win, doc) => {
+  const labels = Array.from(doc.querySelectorAll('.backgrounds-panel .background-grid [data-dots]'))
+    .map(element => element.dataset.label);
+  assert.equal(doc.querySelector('.abilities-panel').nextElementSibling, doc.querySelector('.backgrounds-panel'));
+  assert.deepEqual(labels, [
+    'Aliados',
+    'Apoio',
+    'Contatos',
+    'Espiões',
+    'Fama',
+    'Influência',
+    'Maravilha',
+    'Mentor',
+    'Patrono',
+    'Recursos',
+    'Refúgio',
+    'Sonho',
+    'Vidas Passadas'
+  ]);
+}));
+
+test('antecedentes de personagem criado ficam somente no modal', () => withApp((win, doc) => {
+  resetApp(win, {
+    identity: { experience: 100 },
+    backgrounds: { allies: 1 },
+    aspirations: 'Encontrar um grimorio.',
+    obsession: 'Desvendar a Torre.',
+    world: {
+      magic: { belief: 'O impossivel respondeu.' },
+      reality: { profession: 'Bibliotecaria.' }
+    }
+  });
+  assert.equal(doc.querySelector('.backgrounds-panel').hidden, true);
+  assert.equal(doc.querySelector('.creation-world-panel').hidden, true);
+  assert.equal(doc.querySelector('.notes-focus-section').hidden, false);
+  assert.equal(doc.querySelector('.covenant-panel').hidden, false);
+  assert.equal(doc.getElementById('openBackgroundsModalBtn').hidden, false);
+  click(doc.getElementById('openBackgroundsModalBtn'));
+  const modal = doc.getElementById('backgroundsModal');
+  assert.equal(modal.hidden, false);
+  assert.equal(modal.querySelector('[data-backgrounds-modal-panel="backgrounds"]').hidden, false);
+  assert.equal(modal.querySelector('[data-backgrounds-modal-panel="world"]').hidden, true);
+  assert.equal(dot(modal, 'backgrounds.allies', 1).getAttribute('aria-checked'), 'true');
+  assert.equal(modal.querySelector('[data-field="aspirations"]').value, 'Encontrar um grimorio.');
+  assert.equal(modal.querySelector('[data-field="obsession"]').value, 'Desvendar a Torre.');
+  input(modal.querySelector('[data-field="aspirations"]'), 'Salvar a mentora.');
+  input(modal.querySelector('[data-field="obsession"]'), 'Reabrir o portal.');
+  assert.equal(win.getPath(appState(win), 'aspirations'), 'Salvar a mentora.');
+  assert.equal(win.getPath(appState(win), 'obsession'), 'Reabrir o portal.');
+  click(modal.querySelector('[data-backgrounds-modal-tab="world"]'));
+  const worldPanel = modal.querySelector('[data-backgrounds-modal-panel="world"]');
+  assert.equal(modal.querySelector('[data-backgrounds-modal-panel="backgrounds"]').hidden, true);
+  assert.equal(worldPanel.hidden, false);
+  assert.equal(worldPanel.querySelectorAll('textarea[data-field^="world."]').length, 10);
+  assert.equal(worldPanel.querySelector('[data-field="world.magic.belief"]').value, 'O impossivel respondeu.');
+  assert.equal(worldPanel.querySelector('[data-field="world.reality.profession"]').value, 'Bibliotecaria.');
+  input(worldPanel.querySelector('[data-field="world.magic.belief"]'), 'A lua falou primeiro.');
+  input(worldPanel.querySelector('[data-field="world.reality.profession"]'), 'Restauradora.');
+  assert.equal(win.getPath(appState(win), 'world.magic.belief'), 'A lua falou primeiro.');
+  assert.equal(win.getPath(appState(win), 'world.reality.profession'), 'Restauradora.');
+  click(doc.getElementById('closeBackgroundsModal'));
+  assert.equal(modal.hidden, true);
 }));
 
 test('novo personagem entra em modo criacao e fecha modal inicial', () => withApp((win, doc) => {
@@ -39,9 +105,16 @@ test('novo personagem entra em modo criacao e fecha modal inicial', () => withAp
   const state = appState(win);
   assert.equal(doc.getElementById('startModal').hidden, true);
   assert.equal(doc.getElementById('creationPanel').hidden, false);
+  assert.equal(doc.querySelector('.backgrounds-panel').hidden, false);
+  assert.equal(doc.querySelector('.creation-world-panel').hidden, false);
+  const sheetSections = Array.from(doc.querySelectorAll('#sheet > section'));
+  assert.equal(sheetSections[sheetSections.length - 1], doc.querySelector('.creation-world-panel'));
+  assert.equal(doc.querySelector('.notes-focus-section').hidden, true);
+  assert.equal(doc.querySelector('.covenant-panel').hidden, true);
+  assert.equal(doc.getElementById('openBackgroundsModalBtn').hidden, true);
   assert.equal(doc.getElementById('resourceLabel').textContent, 'Freebies');
   assert.equal(doc.getElementById('experienceInput').value, '15');
-  assert.equal(win.getPath(state, 'attributes.strength'), 1);
+  assert.equal(win.getPath(state, 'attributes.strength'), 0);
   assert.equal(win.getPath(state, 'advantages.arcana'), 1);
 }));
 
@@ -71,6 +144,17 @@ test('editar bolinhas consome XP e permite reduzir devolvendo XP', () => withApp
   click(dot(doc, 'attributes.strength', 3));
   assert.equal(win.getPath(appState(win), 'attributes.strength'), 2);
   assert.equal(win.getPath(appState(win), 'identity.experience'), 92);
+}));
+
+test('antecedentes nao sobem por XP depois da criacao', () => withApp((win, doc) => {
+  resetApp(win, { identity: { experience: 100 }, backgrounds: { allies: 1 } });
+  click(doc.getElementById('openBackgroundsModalBtn'));
+  const modal = doc.getElementById('backgroundsModal');
+  click(doc.getElementById('levelEditBtn'));
+  click(dot(modal, 'backgrounds.allies', 2));
+  assert.equal(win.getPath(appState(win), 'backgrounds.allies'), 1);
+  assert.equal(win.getPath(appState(win), 'identity.experience'), 100);
+  assert.equal(modal.querySelector('[data-dots="backgrounds.allies"] .xp-cost').textContent, '');
 }));
 
 test('XP insuficiente bloqueia aumento de nivel', () => withApp((win, doc) => {
@@ -129,6 +213,59 @@ test('freebies em criacao sao limitados pelo input', () => withApp((win, doc) =>
   input(doc.getElementById('experienceInput'), '99');
   assert.equal(doc.getElementById('experienceInput').value, '15');
   assert.equal(win.getPath(appState(win), 'identity.experience'), 15);
+}));
+
+test('antecedentes usam pool inicial e limite de criacao', () => withApp((win, doc) => {
+  click(doc.getElementById('newCharacterBtn'));
+  click(dot(doc, 'backgrounds.allies', 3));
+  click(dot(doc, 'backgrounds.contacts', 3));
+  click(dot(doc, 'backgrounds.resources', 2));
+  assert.equal(win.getPath(appState(win), 'backgrounds.resources'), 2);
+  assert.equal(win.getPath(appState(win), 'identity.experience'), 14);
+  click(dot(doc, 'backgrounds.resources', 4));
+  assert.equal(win.getPath(appState(win), 'backgrounds.resources'), 2);
+}));
+
+test('antecedente com ponto abre justificativa persistente', () => withApp((win, doc) => {
+  click(doc.getElementById('newCharacterBtn'));
+  const field = doc.querySelector('[data-field="backgroundJustifications.allies"]');
+  assert.equal(field.hidden, true);
+  click(dot(doc, 'backgrounds.allies', 1));
+  assert.equal(field.hidden, false);
+  input(field, 'Jornalista amigo que cobre a prefeitura.');
+  assert.equal(win.getPath(appState(win), 'backgroundJustifications.allies'), 'Jornalista amigo que cobre a prefeitura.');
+  click(dot(doc, 'backgrounds.allies', 1));
+  assert.equal(field.hidden, true);
+  assert.equal(win.getPath(appState(win), 'backgroundJustifications.allies'), 'Jornalista amigo que cobre a prefeitura.');
+}));
+
+test('criacao edita aspiracoes e obsessao em antecedentes', () => withApp((win, doc) => {
+  click(doc.getElementById('newCharacterBtn'));
+  const panel = doc.querySelector('.backgrounds-panel');
+  input(panel.querySelector('[data-field="aspirations"]'), 'Conseguir um sanctum seguro.');
+  input(panel.querySelector('[data-field="obsession"]'), 'Compreender a voz nos sonhos.');
+  assert.equal(win.getPath(appState(win), 'aspirations'), 'Conseguir um sanctum seguro.');
+  assert.equal(win.getPath(appState(win), 'obsession'), 'Compreender a voz nos sonhos.');
+}));
+
+test('criacao edita quem voce e no mundo', () => withApp((win, doc) => {
+  click(doc.getElementById('newCharacterBtn'));
+  const panel = doc.querySelector('.creation-world-panel');
+  assert.equal(panel.querySelectorAll('textarea[data-field^="world."]').length, 10);
+  input(panel.querySelector('[data-field="world.magic.belief"]'), 'Vi o impossivel sobreviver.');
+  input(panel.querySelector('[data-field="world.magic.method"]'), 'Canto nomes antigos.');
+  input(panel.querySelector('[data-field="world.magic.tools"]'), 'Velas, sal e um espelho rachado.');
+  input(panel.querySelector('[data-field="world.magic.style"]'), 'Sombras quentes e marcas douradas.');
+  input(panel.querySelector('[data-field="world.magic.coven"]'), 'Foi acolhida apos um ritual falho.');
+  input(panel.querySelector('[data-field="world.reality.life"]'), 'Cuida de uma livraria usada.');
+  input(panel.querySelector('[data-field="world.reality.profession"]'), 'Restauradora de livros.');
+  input(panel.querySelector('[data-field="world.reality.relationships"]'), 'Tem uma irma distante.');
+  input(panel.querySelector('[data-field="world.reality.home"]'), 'Mora sobre a livraria.');
+  input(panel.querySelector('[data-field="world.reality.places"]'), 'Bibliotecas, sebos e estacoes vazias.');
+  assert.equal(win.getPath(appState(win), 'world.magic.belief'), 'Vi o impossivel sobreviver.');
+  assert.equal(win.getPath(appState(win), 'world.magic.coven'), 'Foi acolhida apos um ritual falho.');
+  assert.equal(win.getPath(appState(win), 'world.reality.profession'), 'Restauradora de livros.');
+  assert.equal(win.getPath(appState(win), 'world.reality.places'), 'Bibliotecas, sebos e estacoes vazias.');
 }));
 
 test('bonus de linhagem habilita somente quando pre-condicoes existem', () => withApp((win, doc) => {
@@ -238,9 +375,11 @@ test('Escape fecha modais abertos', () => withApp((win, doc) => {
   resetApp(win, { identity: { name: 'Lari' } });
   click(doc.getElementById('githubUploadBtn'));
   click(doc.getElementById('aiIntegrationBtn'));
+  click(doc.getElementById('openBackgroundsModalBtn'));
   doc.dispatchEvent(new win.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
   assert.equal(doc.getElementById('githubModal').hidden, true);
   assert.equal(doc.getElementById('aiModal').hidden, true);
+  assert.equal(doc.getElementById('backgroundsModal').hidden, true);
 }));
 
 test('marcar morte de membro absorve XP da ficha mockada', async () => withApp(async (win, doc) => {

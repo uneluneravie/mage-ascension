@@ -57,6 +57,32 @@ function closeStartModal() {
   document.getElementById('startModal').hidden = true;
 }
 
+function openBackgroundsModal() {
+  const modal = document.getElementById('backgroundsModal');
+  if (!modal) return;
+  renderFields();
+  selectBackgroundsModalTab('backgrounds');
+  modal.hidden = false;
+}
+
+function closeBackgroundsModal() {
+  const modal = document.getElementById('backgroundsModal');
+  if (modal) modal.hidden = true;
+}
+
+function selectBackgroundsModalTab(tabName) {
+  const modal = document.getElementById('backgroundsModal');
+  if (!modal) return;
+  modal.querySelectorAll('[data-backgrounds-modal-tab]').forEach(tab => {
+    const active = tab.dataset.backgroundsModalTab === tabName;
+    tab.classList.toggle('is-active', active);
+    tab.setAttribute('aria-selected', String(active));
+  });
+  modal.querySelectorAll('[data-backgrounds-modal-panel]').forEach(panel => {
+    panel.hidden = panel.dataset.backgroundsModalPanel !== tabName;
+  });
+}
+
 function setStartModalStatus(message) {
   document.getElementById('startModalStatus').textContent = message;
 }
@@ -151,6 +177,13 @@ function setCreationMode(enabled) {
   creationMode = enabled;
   creationSettings().mode = enabled;
   document.getElementById('creationPanel').hidden = !enabled;
+  document.querySelector('.backgrounds-panel').hidden = !enabled;
+  document.querySelector('.creation-world-panel').hidden = !enabled;
+  document.querySelector('.notes-focus-section').hidden = enabled;
+  document.querySelector('.covenant-panel').hidden = enabled;
+  const backgroundsButton = document.getElementById('openBackgroundsModalBtn');
+  if (backgroundsButton) backgroundsButton.hidden = enabled;
+  if (enabled) closeBackgroundsModal();
   document.getElementById('resourceLabel').textContent = enabled ? 'Freebies' : 'Experiência';
   const resourceInput = document.getElementById('experienceInput');
   if (resourceInput) {
@@ -176,7 +209,6 @@ function startNewCharacter() {
     abilityPriorities: { ...creationDefaults.abilityPriorities }
   };
   dotPaths().forEach(path => setPath(state, path, 0));
-  Object.values(creationGroups.attributes).flat().forEach(path => setPath(state, path, 1));
   setPath(state, 'advantages.arcana', 1);
   setPath(state, 'identity.experience', 15);
   setPath(state, 'health.damage', []);

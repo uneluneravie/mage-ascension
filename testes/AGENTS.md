@@ -54,7 +54,7 @@ Inclui notas, foco magico e laboratorio. Os campos devem atualizar o estado conf
 
 ### Bolinhas E Edicao De Niveis
 
-Inclui atributos, habilidades, antecedentes, esferas, Arcana e Forca de Vontade. Fora do modo de edicao, bolinhas nao alteram estado. No modo de edicao, clique aumenta ou reduz niveis, calcula custo, consome ou devolve XP e respeita maximos.
+Inclui atributos, habilidades, esferas, Arcana e Forca de Vontade. Fora do modo de edicao, bolinhas nao alteram estado. No modo de edicao, clique aumenta ou reduz niveis, calcula custo, consome ou devolve XP e respeita maximos. Antecedentes sao editaveis somente durante a criacao; depois da criacao, as bolinhas de Antecedentes ficam bloqueadas e nao consomem XP.
 
 ### Custos De XP
 
@@ -71,7 +71,9 @@ Os testes unitarios devem cobrir aumento, reducao, custo zero, maximo e XP insuf
 
 ### Criacao De Personagem
 
-Novo personagem entra em modo de criacao, usa `Freebies` no lugar de experiencia, inicia com 15 freebies, atributos em 1, Arcana em 1, demais niveis em 0 e saude limpa. O painel de prioridades deve aparecer e o resumo deve refletir pools e gastos.
+Novo personagem entra em modo de criacao, usa `Freebies` no lugar de experiencia, inicia com 15 freebies, atributos em 0, Arcana em 1, demais niveis em 0 e saude limpa. O painel de prioridades deve aparecer e o resumo deve refletir pools e gastos. Durante a criacao, as secoes Anotacoes, Paradigma/Foco/Instrumentos e Convento devem ficar ocultas.
+
+A criacao deve exibir a secao `Quem voce e no mundo`, em duas colunas: `Como lida com magia` e `Como lida com a realidade`. Cada coluna possui perguntas com campos de texto curto, persistidos em `world.magic.*` e `world.reality.*`, e incluidos em `creationSnapshot.world`. Depois da criacao, esses campos devem aparecer em uma segunda aba dentro do modal de Antecedentes.
 
 ### Prioridades De Criacao
 
@@ -82,9 +84,17 @@ Inclui prioridades primaria, secundaria e terciaria para atributos e habilidades
 
 Mudancas de prioridade devem sincronizar `state.creation`, recalcular freebies e atualizar o resumo.
 
+### Antecedentes Na Criacao
+
+Durante a criacao, inclui a secao de Antecedentes logo abaixo de Habilidades, com os nomes traduzidos para portugues e ordenados alfabeticamente: Aliados, Apoio, Contatos, Espioes, Fama, Influencia, Maravilha, Mentor, Patrono, Recursos, Refugio, Sonho e Vidas Passadas. Depois da criacao, essa secao deve ficar oculta na ficha principal; os Antecedentes devem ser exibidos em um modal aberto por botao ao lado de `Cronica`. A UI deve renderizar bolinhas para cada Antecedente, usar o campo persistido `backgrounds.*` correspondente e manter descricoes de ajuda coerentes.
+
+Cada Antecedente com pelo menos 1 ponto deve abrir um campo de justificativa abaixo da linha. O texto deve atualizar `backgroundJustifications.*`, continuar no estado/JSON mesmo se os pontos voltarem a 0, ser incluido em `creationSnapshot.backgroundJustifications` e respeitar o bloqueio de preview de IA.
+
+A area de Antecedentes tambem deve exibir campos livres editaveis para Aspirações (`aspirations`) e Obsessão / vício (`obsession`), tanto na secao de criacao quanto no modal de personagem criado. Os hovers devem ser, respectivamente, "coisas que a bruxa deseja a curto prazo" e "coisas que a bruxa anseia de forma compulsiva a longo prazo". Esses campos devem persistir no JSON e em `creationSnapshot`.
+
 ### Limites E Freebies Na Criacao
 
-Esferas nao podem exceder Arcana. Arcana nao pode cair abaixo da maior esfera comprada. O pool compartilhado de Arcana, Esferas e Forca de Vontade tem 6 pontos iniciais. Backgrounds tem 7 pontos iniciais. Gastos acima desses limites devem consumir freebies.
+Esferas nao podem exceder Arcana. Arcana nao pode cair abaixo da maior esfera comprada. O pool compartilhado de Arcana, Esferas e Forca de Vontade tem 6 pontos iniciais. Antecedentes tem 7 pontos iniciais, nenhum Antecedente pode comecar acima de 3 pontos e gastos acima do pool inicial devem consumir 1 Freebie por ponto.
 
 ### Saude
 
@@ -132,7 +142,7 @@ Inclui perguntas salvas em `state.ai`, geracao de prompt via `window.aiPromptTem
 
 ### Modais E Navegacao
 
-Inclui modal inicial, fichas, GitHub, IA, carregar linhagem, morte, reviver e remover imagem. Todos devem fechar por botao, backdrop quando aplicavel e Escape. Cancelamentos devem limpar estados pendentes.
+Inclui modal inicial, fichas, Antecedentes, GitHub, IA, carregar linhagem, morte, reviver e remover imagem. Todos devem fechar por botao, backdrop quando aplicavel e Escape. Cancelamentos devem limpar estados pendentes.
 
 ### Acessibilidade E Estado Visual
 
