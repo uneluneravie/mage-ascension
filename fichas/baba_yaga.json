@@ -28,9 +28,10 @@
   "health": {
     "damage": [
       "X",
+      "X",
       "/"
     ],
-    "level": "hurt"
+    "level": "injured"
   },
   "advantages": {
     "quintessence": 0,
