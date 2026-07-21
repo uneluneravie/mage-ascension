@@ -34,8 +34,8 @@
     "level": "injured"
   },
   "advantages": {
-    "quintessence": 3,
-    "paradox": 0
+    "quintessence": 1,
+    "paradox": 1
   },
   "creationSnapshot": {
     "capturedAt": "2026-06-08T01:06:16.957Z",
