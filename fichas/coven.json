@@ -3,7 +3,12 @@
   "paradox": 1,
   "lab": "teste",
   "pantry": [
-    null,
+    {
+      "id": "item-1784594487924-1",
+      "name": "teste",
+      "description": "descrição do item teste",
+      "image": "imagens/coven/item_1784594487924_1.png"
+    },
     null,
     null,
     null,
@@ -20,10 +25,5 @@
     null,
     null
   ],
-  "lock": {
-    "owner": "uneluneravie",
-    "sessionId": "1784594434972-a13fuc8r7o6",
-    "acquiredAt": "2026-07-21T00:41:10.173Z",
-    "expiresAt": "2026-07-21T00:51:10.173Z"
-  }
+  "lock": null
 }
