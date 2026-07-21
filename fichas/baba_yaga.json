@@ -28,13 +28,14 @@
   "health": {
     "damage": [
       "X",
+      "X",
       "/"
     ],
-    "level": "hurt"
+    "level": "injured"
   },
   "advantages": {
-    "quintessence": 0,
-    "paradox": 0
+    "quintessence": 10,
+    "paradox": 10
   },
   "creationSnapshot": {
     "capturedAt": "2026-06-08T01:06:16.957Z",
