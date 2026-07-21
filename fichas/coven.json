@@ -1,5 +1,5 @@
 {
-  "name": "",
+  "name": "coven de teste",
   "quintessence": 2,
   "paradox": 3,
   "obolOfTheDead": 3,
@@ -28,10 +28,5 @@
     null,
     null
   ],
-  "lock": {
-    "owner": "uneluneravie",
-    "sessionId": "1784597906061-d8aj2uk62d4",
-    "acquiredAt": "2026-07-21T01:40:36.135Z",
-    "expiresAt": "2026-07-21T01:50:36.135Z"
-  }
+  "lock": null
 }
