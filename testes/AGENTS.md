@@ -9,6 +9,8 @@ Esta pasta concentra os testes automatizados da ficha de Mage: The Ascension.
 
 ## Como Rodar
 
+O Codex nao deve executar estes testes, iniciar o servidor de testes ou abrir os runners. Ele pode consultar e atualizar a cobertura e considerar resultados previamente gerados, quando existirem. A execucao fica a cargo de uma pessoa.
+
 Este projeto ainda nao usa dependencias de build/teste. Os testes rodam direto no navegador, como o proprio app.
 
 Abra:
@@ -71,7 +73,7 @@ Os testes unitarios devem cobrir aumento, reducao, custo zero, maximo e XP insuf
 
 ### Criacao De Personagem
 
-Novo personagem entra em modo de criacao, usa `Freebies` no lugar de experiencia, inicia com 15 freebies, atributos em 0, Arcana em 1, demais niveis em 0 e saude limpa. O painel de prioridades deve aparecer e o resumo deve refletir pools e gastos. Durante a criacao, as secoes Anotacoes, Paradigma/Foco/Instrumentos e Convento devem ficar ocultas.
+Novo personagem entra em modo de criacao, usa `Freebies` no lugar de experiencia, inicia com 15 freebies, atributos em 0, Arcana em 1, demais niveis em 0 e saude limpa. O painel de prioridades deve aparecer e o resumo deve refletir pools e gastos. Durante a criacao, as secoes Anotacoes, Paradigma/Foco/Instrumentos e Coven devem ficar ocultas.
 
 A criacao deve exibir a secao `Quem voce e no mundo`, em duas colunas: `Como lida com magia` e `Como lida com a realidade`. Cada coluna possui perguntas com campos de texto curto, persistidos em `world.magic.*` e `world.reality.*`, e incluidos em `creationSnapshot.world`. Depois da criacao, esses campos devem aparecer em uma segunda aba dentro do modal de Antecedentes.
 
@@ -103,6 +105,20 @@ Inclui dano contusivo `/`, letal `X` e agravado `*`, ordenados por severidade. A
 ### Linhagem
 
 Inclui nome da linhagem, arquivo em `linhagens/nome.json`, membros, cronica do membro, status vivo/morto e persistencia separada da ficha. A ficha deve bloquear salvamento de linhagem com dados mas sem nome.
+
+### Coven
+
+O coven usa o arquivo global `fichas/coven.json`, compartilhado por todos os personagens, e nao deve ser serializado dentro da ficha. A secao inicia somente leitura. A edicao exige autosave/GitHub ativo, releitura do arquivo remoto e aquisicao de um lock no proprio JSON com expiracao maxima de 10 minutos. Um lock ativo de outra sessao bloqueia a edicao. Ao concluir, os dados devem ser salvos, o lock removido e a secao deve voltar a somente leitura. Autosaves durante a edicao devem preservar e validar o lock antes de escrever.
+
+A subseção Dispensa possui exatamente 16 slots quadrados. Slots vazios só podem criar itens durante a edição do coven. Cada item persiste nome, descrição e caminho da imagem no JSON; a imagem quadrada deve ser enviada separadamente para `imagens/coven/` antes do JSON. Itens ocupados exibem imagem e nome e abrem um modal com todas as informações, inclusive em modo somente leitura.
+
+A Fama do coven deve persistir um nível numérico entre 0 e 6. A interface deve mostrar a classificação correspondente e disponibilizar a descrição completa do nível selecionado, inclusive em modo somente leitura.
+
+O campo numérico `obolOfTheDead`, exibido como `Óbolo dos Mortos`, representa o dinheiro compartilhado do coven, não aceita valores negativos e obedece ao bloqueio geral de edição da seção.
+
+Quintessência e Paradoxo do coven só mudam por transferência da ficha ativa: 2 pontos de Quintessência do personagem equivalem a 1 no coven, e 1 ponto de Paradoxo do personagem equivale a 2 no coven. A devolução usa a proporção inversa. Quintessência e Paradoxo do personagem ficam limitados ao intervalo de 0 a 10; os totais do coven não possuem máximo.
+
+Ao atingir a expiração de 10 minutos, a sessão deve tentar salvar automaticamente o coven e suas imagens pendentes, remover seu lock e voltar ao modo somente leitura. Se o salvamento falhar ou o lock já tiver mudado, a edição ainda deve ser pausada e a falha deve ser informada sem sobrescrever o lock de outra sessão.
 
 ### XP E Rating Da Linhagem
 

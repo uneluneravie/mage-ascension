@@ -8,8 +8,8 @@ function sheetMainTemplate() {
     ${attributesTemplate()}
     ${abilitiesTemplate()}
     ${backgroundsTemplate()}
-    ${notesFocusTemplate()}
     ${covenantTemplate()}
+    ${notesFocusTemplate()}
     ${lineageTemplate()}
     ${creationWorldTemplate()}
   </main>
@@ -27,6 +27,7 @@ function appShellTemplate() {
   ${lineageLoadModalTemplate()}
   ${aiModalTemplate()}
   ${characterImageRemoveModalTemplate()}
+  ${covenItemModalTemplate()}
   ${lineageDeathModalTemplate()}
   ${lineageReviveModalTemplate()}
   `;

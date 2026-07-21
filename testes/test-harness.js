@@ -94,6 +94,7 @@ function appFrameHtml() {
   <script src="scripts/health-fields.js?v=${appVersion}"></script>
   <script src="scripts/lineage.js?v=${appVersion}"></script>
   <script src="scripts/sheets-serialization.js?v=${appVersion}"></script>
+  <script src="scripts/github-sync.js?v=${appVersion}"></script>
   <script src="scripts/autosave.js?v=${appVersion}"></script>
   <script src="scripts/sheet-loading-creation.js?v=${appVersion}"></script>
   <script src="scripts/github-ui.js?v=${appVersion}"></script>

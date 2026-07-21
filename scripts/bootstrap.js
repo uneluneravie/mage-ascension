@@ -5,6 +5,8 @@
   bindNumberSteppers();
   bindLevelEditor();
   bindLineage();
+  bindCoven();
+  loadCoven();
   bindAiQuestions();
   bindCharacterImageUpload();
   populatePriorityControls();
@@ -62,6 +64,7 @@
       closeLineageDeathModal();
       closeLineageReviveModal();
       closeCharacterImageRemoveModal();
+      closeCovenItemModal();
     }
   });
   document.getElementById('saveBtn').addEventListener('click', saveJson);

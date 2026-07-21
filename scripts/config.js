@@ -127,6 +127,19 @@ const sphereSymbols = {
   'spheres.time': '◴',
   'spheres.life': '✚'
 };
+const covenState = { name: '', quintessence: 0, paradox: 0, obolOfTheDead: 0, fame: 0, lab: '', pantry: Array(16).fill(null), lock: null };
+const covenFameLevels = [
+  { level: 0, classification: 'Profanas', description: 'Um grupo sem reconhecimento, tratado como amadores ou curiosos do oculto.' },
+  { level: 1, classification: 'Despertas', description: 'Um coven recém-formado, cujos membros provaram possuir verdadeiro Despertar.' },
+  { level: 2, classification: 'Iniciadas', description: 'O grupo já é aceito em círculos ocultistas e começa a acumular experiência.' },
+  { level: 3, classification: 'Arcanistas', description: 'Domínio consistente das Artes e passa a ser consultado por outros.' },
+  { level: 4, classification: 'Oraculares', description: 'Suas descobertas, profecias ou feitos influenciam decisões de outros Despertos.' },
+  { level: 5, classification: 'Luminares', description: 'Considerado uma referência entre os místicos.' },
+  { level: 6, classification: 'Ascendidas', description: 'Um coven cuja existência já se confunde com a própria história da Ascensão.' }
+];
+const covenFileName = 'coven.json';
+const covenLockDurationMs = 10 * 60 * 1000;
+const covenEditorSessionId = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 const backgroundJustificationHints = {
   allies: 'Ex.: jornalista amigo, policial honesto, médico, advogado, hacker.',
   backup: 'Ex.: sindicato, universidade, corporação, convenção tecnocrática.',
@@ -187,7 +200,7 @@ const sheetsHandleStoreName = 'handles';
 const sheetsDirHandleKey = 'fichas';
 const githubSettingsKey = 'mage-ascension-github-settings';
 const defaultGithubRepo = 'uneluneravie/mage-ascension';
-const autosaveIntervalMs = 15 * 60 * 1000;
+const autosaveIntervalMs = 60 * 1000;
 let currentSheetFile = '';
 let sheetsDirHandle = null;
 let levelEditMode = false;
@@ -203,3 +216,12 @@ let pendingLineageReviveId = null;
 let pendingCharacterImage = null;
 let pendingCharacterImageRemovalPath = '';
 let currentSheetAssetBaseUrl = 'fichas';
+let githubLoadedSheetSource = null;
+let githubLineageSyncBase = null;
+let lineageSyncLoadingCount = 0;
+let lineageSyncDisabledControls = [];
+let covenEditMode = false;
+let covenLockTimer = null;
+const pendingCovenItemImages = {};
+let activeCovenPantrySlot = null;
+let activeCovenItemImageDraft = null;

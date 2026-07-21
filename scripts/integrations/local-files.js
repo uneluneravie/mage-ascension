@@ -134,28 +134,19 @@ async function saveJson() {
   ensureHealthDamage();
   ensureNumberDefaults();
 
+  await pullLatestLineage();
+
   const fileName = currentSheetFile || sheetFileName();
   const content = sheetJson();
   const lineageShouldSave = lineageHasData() && lineageName();
   const nextLineageFileName = lineageShouldSave ? lineageFileName() : '';
   const nextLineageJson = lineageShouldSave ? lineageJson() : '';
 
-  try {
-    await ensureSheetsDirHandle();
-    await writeLocalJsonFile(fileName, content);
-    const imagePath = await writeLocalCharacterImage();
-    await removeLocalCharacterImage(imagePath);
-    if (lineageShouldSave) {
-      await writeLocalLineageFile(nextLineageFileName, nextLineageJson);
-    }
-    currentSheetFile = fileName;
-    await updateLocalManifest(fileName);
-    document.getElementById('saveBtn').title = lineageShouldSave
-      ? `Ficha salva em fichas/${fileName} e linhagens/${nextLineageFileName}`
-      : `Ficha salva em fichas/${fileName}`;
-  } catch (err) {
-    if (err.name === 'AbortError') return;
-    downloadJsonFile(fileName, content);
-    if (lineageShouldSave) downloadJsonFile(nextLineageFileName, nextLineageJson);
-  }
+  downloadJsonFile(fileName, content);
+  if (lineageShouldSave) downloadJsonFile(nextLineageFileName, nextLineageJson);
+  downloadJsonFile(covenFileName, covenJson());
+  currentSheetFile = fileName;
+  document.getElementById('saveBtn').title = lineageShouldSave
+    ? `Baixados ${fileName} e ${nextLineageFileName}`
+    : `Baixado ${fileName}`;
 }

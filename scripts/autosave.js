@@ -66,9 +66,12 @@ async function runAutosave() {
   try {
     ensureHealthDamage();
     ensureNumberDefaults();
+    await pullLatestLineage(autosaveAuth);
+    if (!covenEditMode) await loadCoven(autosaveAuth);
     const content = sheetJson();
     const lineageContent = lineageHasData() && lineageName() ? lineageJson() : '';
-    const autosaveContent = `${content}\n---lineage---\n${lineageContent}\n---image---\n${pendingCharacterImage?.dataUrl || ''}`;
+    const covenContent = covenEditMode ? covenJson() : '';
+    const autosaveContent = `${content}\n---lineage---\n${lineageContent}\n---coven---\n${covenContent}\n---image---\n${pendingCharacterImage?.dataUrl || ''}`;
     if (autosaveContent === autosaveLastSavedJson) {
       console.log('[autosave] Nenhuma alteração para enviar.');
       scheduleAutosave();
@@ -85,10 +88,11 @@ async function runAutosave() {
       previousFileName
     );
     const lineagePath = await uploadLineageToGithub(autosaveAuth, `Autosave linhagem ${lineageFileName()}`);
+    const covenPath = await uploadCovenToGithub(autosaveAuth, 'Autosave coven');
     const imageRelativePath = await uploadCharacterImageToGithub(autosaveAuth, `Autosave imagem ${characterImageFileName()}`);
     const removedImagePath = await removeCharacterImageFromGithub(autosaveAuth, imageRelativePath);
     const imagePath = imageRelativePath ? joinGitHubPath(autosaveAuth.sheetsPath, imageRelativePath) : removedImagePath;
-    autosaveLastSavedJson = `${content}\n---lineage---\n${lineageContent}\n---image---\n`;
+    autosaveLastSavedJson = `${content}\n---lineage---\n${lineageContent}\n---coven---\n${covenPath ? covenJson() : ''}\n---image---\n`;
     document.getElementById('githubUploadBtn').title = imagePath
       ? `Ficha enviada para ${autosaveAuth.repo}/${sheetPath} e ${imagePath}`
       : lineagePath

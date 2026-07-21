@@ -5,20 +5,18 @@ function shellHeaderTemplate() {
         <h2>Mage: The Ascension</h2>
       </div>
       <div class="actions no-print">
-        <button id="saveBtn" class="icon-btn" type="button" aria-label="Salvar ficha" title="Salvar ficha">
+        <button id="saveBtn" class="icon-btn" type="button" aria-label="Baixar ficha" title="Baixar ficha">
           <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M5 3h14l2 2v16H3V3h2z"></path>
-            <path d="M7 3v6h10V3"></path>
-            <path d="M7 21v-8h10v8"></path>
+            <path d="M12 3v12"></path>
+            <path d="m7 10 5 5 5-5"></path>
+            <path d="M5 21h14"></path>
           </svg>
         </button>
-        <button id="githubUploadBtn" class="icon-btn" type="button" aria-label="Enviar para GitHub" title="Enviar para GitHub">
+        <button id="githubUploadBtn" class="icon-btn" type="button" aria-label="Salvar na nuvem (GitHub)" title="Salvar na nuvem (GitHub)">
           <svg viewBox="0 0 24 24" aria-hidden="true">
-            <circle cx="18" cy="5" r="3"></circle>
-            <circle cx="6" cy="12" r="3"></circle>
-            <circle cx="18" cy="19" r="3"></circle>
-            <path d="m8.6 10.5 6.8-4"></path>
-            <path d="m8.6 13.5 6.8 4"></path>
+            <path d="M7 18h10a4 4 0 0 0 .8-7.9A6 6 0 0 0 6.2 8.5 4.8 4.8 0 0 0 7 18z"></path>
+            <path d="M12 15V9"></path>
+            <path d="m9.5 11.5 2.5-2.5 2.5 2.5"></path>
           </svg>
         </button>
         <button id="commitAiPreviewBtn" class="icon-btn ai-preview-action" type="button" aria-label="Confirmar alterações sugeridas" title="Confirmar alterações sugeridas" hidden>

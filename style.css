@@ -116,7 +116,30 @@ button, .file-btn {
 .two { grid-template-columns: repeat(2, 1fr); }
 .identity-health { grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr); }
 .spheres-advantages { grid-template-columns: 2fr 1fr; }
-.lineage-section { grid-template-columns: 2fr 1fr; }
+.lineage-section { grid-template-columns: 2fr 1fr; position: relative; }
+.lineage-sync-loading {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  color: var(--gold-2);
+  background: rgba(8, 6, 5, .88);
+  cursor: wait;
+}
+.lineage-sync-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(214, 173, 80, .3);
+  border-top-color: var(--gold-2);
+  border-radius: 50%;
+  animation: lineage-sync-spin .75s linear infinite;
+}
+@keyframes lineage-sync-spin { to { transform: rotate(360deg); } }
 .panel {
   border: 1px solid var(--line);
   border-radius: 18px;
@@ -361,6 +384,7 @@ select option {
 }
 textarea { min-height: 140px; resize: vertical; }
 textarea.large { min-height: 220px; }
+.notes-focus-section textarea.large { width: 100%; }
 .health-title {
   display: inline-flex;
   align-items: baseline;
@@ -598,6 +622,168 @@ textarea.large { min-height: 220px; }
   background: #b33a32;
   border-color: #ff9a8f;
   box-shadow: 0 0 9px rgba(255, 90, 75, .45);
+}
+
+.stepper-btn:disabled {
+  opacity: .3;
+  cursor: default;
+}
+
+.section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.coven-lock-status {
+  min-height: 1.25em;
+  margin: 0 0 .75rem;
+  color: var(--muted);
+}
+
+.coven-lock-status.error {
+  color: #a33;
+}
+
+.coven-primary-row {
+  display: grid;
+  grid-template-columns: minmax(240px, 1fr) minmax(280px, 1.5fr);
+  gap: 14px;
+  align-items: stretch;
+}
+
+.coven-subsection {
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(0, 0, 0, .2);
+}
+
+.coven-subsection > h3 {
+  margin-top: 0;
+}
+
+.coven-laboratory {
+  margin-top: 14px;
+}
+
+.coven-laboratory textarea {
+  min-height: 150px;
+}
+
+.coven-fame-field {
+  display: grid;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.coven-name-field {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.coven-fame-description {
+  min-height: 2.4em;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.coven-pantry-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(48px, 64px));
+  gap: 8px;
+  justify-content: start;
+}
+
+.coven-pantry-slot {
+  position: relative;
+  width: 100%;
+  max-width: 64px;
+  aspect-ratio: 1;
+  overflow: hidden;
+  padding: 0;
+  border-color: var(--line);
+  border-radius: 7px;
+  background: rgba(0, 0, 0, .35);
+}
+
+.coven-pantry-slot:disabled {
+  opacity: .45;
+  cursor: default;
+}
+
+.coven-pantry-slot img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+
+.coven-pantry-slot.has-item span {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  overflow: hidden;
+  padding: 3px 4px;
+  color: #fff4cf;
+  background: rgba(0, 0, 0, .78);
+  font-size: 8px;
+  line-height: 1.15;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.coven-pantry-empty {
+  color: var(--gold);
+  font-size: 22px;
+}
+
+.coven-item-form {
+  display: grid;
+  gap: 12px;
+}
+
+.coven-item-image-picker {
+  width: 160px;
+  aspect-ratio: 1;
+  justify-self: center;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border: 1px dashed var(--gold);
+  border-radius: 10px;
+  color: var(--gold-2);
+  cursor: pointer;
+  text-align: center;
+}
+
+.coven-item-image-picker.is-readonly {
+  cursor: default;
+}
+
+.coven-item-image-picker img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.coven-item-image-picker input {
+  display: none;
+}
+
+@media (max-width: 760px) {
+  .coven-primary-row {
+    grid-template-columns: 1fr;
+  }
+
+  .coven-pantry-grid {
+    grid-template-columns: repeat(4, minmax(48px, 64px));
+  }
 }
 .dot-row.ai-suggested .dot-label {
   color: #f8dcff;

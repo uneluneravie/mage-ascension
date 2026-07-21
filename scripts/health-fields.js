@@ -183,6 +183,11 @@ function bindFields() {
         return;
       }
       let value = e.target.type === 'number' ? Number(e.target.value || e.target.dataset.numberDefault || 0) : e.target.value;
+      if (e.target.type === 'number') {
+        if (e.target.min !== '') value = Math.max(Number(e.target.min), value);
+        if (e.target.max !== '') value = Math.min(Number(e.target.max), value);
+        e.target.value = value;
+      }
       if (creationMode && e.target.dataset.field === 'identity.experience') {
         value = Math.min(15, Math.max(0, value));
         e.target.value = value;
@@ -196,6 +201,7 @@ function bindFields() {
         updateAllDotCosts();
         renderCreationSummary();
       }
+      updateNumberStepperStates();
     };
     el.addEventListener('input', updateField);
     el.addEventListener('change', updateField);
@@ -217,7 +223,20 @@ function bindNumberSteppers() {
 
       input.value = next;
       setPath(state, input.dataset.field, next);
+      updateNumberStepperStates();
     });
+  });
+}
+
+function updateNumberStepperStates() {
+  document.querySelectorAll('[data-stepper]').forEach(button => {
+    const input = document.querySelector(`[data-field="${button.dataset.target}"]`);
+    if (!input) return;
+    const current = Number(input.value || input.dataset.numberDefault || 0);
+    const min = input.min === '' ? -Infinity : Number(input.min);
+    const max = input.max === '' ? Infinity : Number(input.max);
+    const atLimit = button.dataset.stepper === 'up' ? current >= max : current <= min;
+    button.disabled = Boolean(aiPreviewState) || atLimit;
   });
 }
 
@@ -226,6 +245,12 @@ function ensureNumberDefaults() {
     if (getPath(state, input.dataset.field, '') === '') {
       setPath(state, input.dataset.field, Number(input.dataset.numberDefault));
     }
+  });
+}
+
+function clampCharacterCovenResources() {
+  ['advantages.quintessence', 'advantages.paradox'].forEach(path => {
+    setPath(state, path, Math.min(10, Math.max(0, Number(getPath(state, path, 0)) || 0)));
   });
 }
 
@@ -239,6 +264,7 @@ function renderFields() {
   document.querySelectorAll('[data-stepper]').forEach(button => {
     button.disabled = Boolean(aiPreviewState);
   });
+  updateNumberStepperStates();
   document.querySelectorAll('[data-dots]').forEach(renderDots);
   renderCharacterImage();
   renderHealthDamage();

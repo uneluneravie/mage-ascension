@@ -22,7 +22,7 @@ O `index.html` carrega templates HTML em `scripts/components/` antes de iniciar 
 
 Ao criar um personagem novo, o campo de experiencia vira `Freebies` e comeca em 15. O app habilita os controles de prioridades de Atributos e Habilidades, inicia Atributos em 0, aplica os pontos iniciais de Arcana e Saude, e calcula custos de compra por prioridade, pontos iniciais e Freebies.
 
-Durante a criacao, a ficha mostra apenas as areas necessarias para distribuir pontos e definir conceitos iniciais. Anotacoes, Paradigma/Foco/Instrumentos e Convento ficam ocultos ate a criacao terminar.
+Durante a criacao, a ficha mostra apenas as areas necessarias para distribuir pontos e definir conceitos iniciais. Anotacoes, Paradigma/Foco/Instrumentos e Coven ficam ocultos ate a criacao terminar.
 
 A secao `Quem voce e no mundo` aparece durante a criacao com duas colunas de perguntas: `Como lida com magia` e `Como lida com a realidade`. As respostas sao salvas em `world.magic.*` e `world.reality.*`. Depois da criacao, esses campos ficam disponiveis em uma segunda aba dentro do modal de Antecedentes.
 

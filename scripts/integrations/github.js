@@ -182,6 +182,8 @@ async function uploadJsonToGithub(event) {
   try {
     storeGithubSettings({ user, repo, branch, sheetsPath });
     const auth = { user, token, repo, branch, sheetsPath };
+    await pullLatestLineage(auth);
+    await loadCoven(auth);
     const sheetPath = await uploadSheetToGithub(
       auth,
       fileName,
@@ -193,7 +195,7 @@ async function uploadJsonToGithub(event) {
     const imageRelativePath = await uploadCharacterImageToGithub(auth, `Atualiza imagem ${characterImageFileName()}`);
     const removedImagePath = await removeCharacterImageFromGithub(auth, imageRelativePath);
     const imagePath = imageRelativePath ? joinGitHubPath(sheetsPath, imageRelativePath) : removedImagePath;
-    autosaveLastSavedJson = `${sheetJson()}\n---lineage---\n${lineagePath ? lineageJson() : ''}\n---image---\n`;
+    autosaveLastSavedJson = `${sheetJson()}\n---lineage---\n${lineagePath ? lineageJson() : ''}\n---coven---\n\n---image---\n`;
     startAutosave(auth);
     document.getElementById('githubPat').value = '';
     document.getElementById('githubUploadBtn').title = imagePath

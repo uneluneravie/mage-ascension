@@ -284,6 +284,37 @@ function characterImageRemoveModalTemplate() {
   `;
 }
 
+function covenItemModalTemplate() {
+  return `
+<div class="modal-backdrop no-print" id="covenItemModal" hidden>
+  <div class="modal coven-item-modal" role="dialog" aria-modal="true" aria-labelledby="covenItemModalTitle">
+    <header class="modal-header">
+      <h2 id="covenItemModalTitle">Item da dispensa</h2>
+      <button id="closeCovenItemModal" class="icon-btn modal-close" type="button" aria-label="Fechar" title="Fechar">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M18 6 6 18"></path>
+          <path d="m6 6 12 12"></path>
+        </svg>
+      </button>
+    </header>
+    <form id="covenItemForm" class="coven-item-form">
+      <label class="coven-item-image-picker" id="covenItemImagePicker" tabindex="0">
+        <img id="covenItemImagePreview" alt="Imagem do item" hidden />
+        <span id="covenItemImagePlaceholder">Selecionar imagem quadrada</span>
+        <input id="covenItemImageInput" type="file" accept="image/*" />
+      </label>
+      <label>Nome<input id="covenItemName" maxlength="80" required /></label>
+      <label>Descrição<textarea id="covenItemDescription" rows="5"></textarea></label>
+      <p id="covenItemModalStatus" class="modal-status" role="status"></p>
+      <div class="ai-actions" id="covenItemEditActions">
+        <button id="saveCovenItemBtn" type="submit">Salvar item</button>
+      </div>
+    </form>
+  </div>
+</div>
+  `;
+}
+
 function lineageDeathModalTemplate() {
   return `
 <div class="modal-backdrop no-print" id="lineageDeathModal" hidden>

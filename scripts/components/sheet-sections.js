@@ -136,7 +136,7 @@ function spheresAdvantagesTemplate() {
           <span class="dot-label" title="Energia mágica primordial usada para alimentar efeitos.">Quintessência</span>
           <span class="number-stepper">
             <button class="stepper-btn" type="button" data-stepper="down" data-target="advantages.quintessence" aria-label="Diminuir Quintessência">‹</button>
-            <input data-field="advantages.quintessence" data-number-default="0" type="number" min="0" max="20" step="1" value="0" inputmode="numeric" />
+            <input data-field="advantages.quintessence" data-number-default="0" type="number" min="0" max="10" step="1" value="0" inputmode="numeric" />
             <button class="stepper-btn" type="button" data-stepper="up" data-target="advantages.quintessence" aria-label="Aumentar Quintessência">›</button>
           </span>
         </label>
@@ -144,7 +144,7 @@ function spheresAdvantagesTemplate() {
           <span class="dot-label" title="Acúmulo da reação da realidade contra magia impossível.">Paradoxo</span>
           <span class="number-stepper">
             <button class="stepper-btn" type="button" data-stepper="down" data-target="advantages.paradox" aria-label="Diminuir Paradoxo">‹</button>
-            <input data-field="advantages.paradox" data-number-default="0" type="number" min="0" max="20" step="1" value="0" inputmode="numeric" />
+            <input data-field="advantages.paradox" data-number-default="0" type="number" min="0" max="10" step="1" value="0" inputmode="numeric" />
             <button class="stepper-btn" type="button" data-stepper="up" data-target="advantages.paradox" aria-label="Aumentar Paradoxo">›</button>
           </span>
         </label>
@@ -264,48 +264,59 @@ function backgroundsTemplate() {
 
 function notesFocusTemplate() {
   return `
-<section class="grid two notes-focus-section">
-      <div class="panel">
-        <h2>Anotações</h2>
-        <textarea class="large" data-field="notes" placeholder="Rotes, grimório, contatos, histórico, equipamentos..."></textarea>
-      </div>
-      <div class="panel">
-        <h2>Paradigma, Foco e Instrumentos</h2>
-        <textarea data-field="magicFocus" placeholder="Como o personagem entende e executa magia?"></textarea>
-      </div>
-    </section>
+<section class="panel notes-focus-section">
+  <h2>Anotações</h2>
+  <textarea class="large" data-field="notes" placeholder="Rotes, grimório, contatos, histórico, equipamentos..."></textarea>
+</section>
   `;
 }
 
 function covenantTemplate() {
   return `
-<section class="panel covenant-panel">
-      <h2>Convento</h2>
-      <label class="number-row">
-        <span class="dot-label" title="Energia mágica primordial usada para alimentar efeitos.">Quintessência</span>
-        <span class="number-stepper">
-          <button class="stepper-btn" type="button" data-stepper="down" data-target="advantages.quintessence" aria-label="Diminuir Quintessência">‹</button>
-          <input data-field="advantages.quintessence" data-number-default="0" type="number" min="0" max="20" step="1" value="0" inputmode="numeric" />
-          <button class="stepper-btn" type="button" data-stepper="up" data-target="advantages.quintessence" aria-label="Aumentar Quintessência">›</button>
-        </span>
+<section class="panel covenant-panel" id="covenSection">
+  <div class="section-heading">
+    <h2>Coven</h2>
+    <button id="covenEditBtn" class="icon-btn level-edit-btn no-print" type="button" aria-label="Editar coven" title="Editar coven">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 20 9-9-8-8-9 9v8h8z"></path><path d="m16 7 1 1"></path></svg>
+    </button>
+  </div>
+  <p id="covenLockStatus" class="coven-lock-status no-print" role="status" aria-live="polite"></p>
+  <div class="coven-primary-row">
+    <section class="coven-subsection coven-resources" aria-labelledby="covenResourcesTitle">
+      <h3 id="covenResourcesTitle">Recursos</h3>
+      <label class="coven-name-field">Nome do Coven
+        <input data-coven-field="name" type="text" maxlength="120" placeholder="Nome do coven" />
       </label>
-      <label class="number-row">
-        <span class="dot-label" title="Acúmulo da reação da realidade contra magia impossível.">Paradoxo</span>
-        <span class="number-stepper">
-          <button class="stepper-btn" type="button" data-stepper="down" data-target="advantages.paradox" aria-label="Diminuir Paradoxo">‹</button>
-          <input data-field="advantages.paradox" data-number-default="0" type="number" min="0" max="20" step="1" value="0" inputmode="numeric" />
-          <button class="stepper-btn" type="button" data-stepper="up" data-target="advantages.paradox" aria-label="Aumentar Paradoxo">›</button>
-        </span>
+      <label class="number-row"><span class="dot-label" title="Cada ponto do coven consome 2 pontos de Quintessência do personagem.">Quintessência</span><span class="number-stepper"><button class="stepper-btn" type="button" data-coven-stepper="down" data-coven-target="quintessence" aria-label="Devolver Quintessência ao personagem">−</button><input data-coven-field="quintessence" type="number" min="0" step="1" value="0" inputmode="numeric" readonly /><button class="stepper-btn" type="button" data-coven-stepper="up" data-coven-target="quintessence" aria-label="Transferir Quintessência do personagem">+</button></span></label>
+      <label class="number-row"><span class="dot-label" title="Cada ponto de Paradoxo do personagem adiciona 2 pontos ao coven.">Paradoxo</span><span class="number-stepper"><button class="stepper-btn" type="button" data-coven-stepper="down" data-coven-target="paradox" aria-label="Devolver Paradoxo ao personagem">−</button><input data-coven-field="paradox" type="number" min="0" step="2" value="0" inputmode="numeric" readonly /><button class="stepper-btn" type="button" data-coven-stepper="up" data-coven-target="paradox" aria-label="Transferir Paradoxo do personagem">+</button></span></label>
+      <label class="number-row"><span class="dot-label" title="Dinheiro compartilhado do coven.">Óbolo dos Mortos</span><span class="number-stepper"><button class="stepper-btn" type="button" data-coven-stepper="down" data-coven-target="obolOfTheDead" aria-label="Diminuir Óbolo dos Mortos">‹</button><input data-coven-field="obolOfTheDead" type="number" min="0" max="999999" step="1" value="0" inputmode="numeric" /><button class="stepper-btn" type="button" data-coven-stepper="up" data-coven-target="obolOfTheDead" aria-label="Aumentar Óbolo dos Mortos">›</button></span></label>
+      <label class="coven-fame-field">Fama
+        <select data-coven-field="fame" aria-describedby="covenFameDescription"><option value="0">0 — Profanos</option><option value="1">1 — Despertos</option><option value="2">2 — Iniciados</option><option value="3">3 — Arcanistas</option><option value="4">4 — Oraculares</option><option value="5">5 — Luminares</option><option value="6">6 — Ascendentes</option></select>
+        <span id="covenFameDescription" class="coven-fame-description"></span>
       </label>
-      <h3>Laboratório</h3>
-      <textarea data-field="lab"></textarea>
+    </section>
+    <section class="coven-subsection coven-pantry" aria-labelledby="covenPantryTitle">
+      <h3 id="covenPantryTitle">Dispensa</h3>
+      <div id="covenPantryGrid" class="coven-pantry-grid" aria-label="Inventário da dispensa com 16 espaços"></div>
+    </section>
+  </div>
+  <!--
+  <section class="coven-subsection coven-laboratory" aria-labelledby="covenLaboratoryTitle">
+    <h3 id="covenLaboratoryTitle">Laboratório</h3>
+    <textarea data-coven-field="lab"></textarea>
+  </section>
+  -->
     </section>
   `;
 }
 
 function lineageTemplate() {
   return `
-<section class="grid lineage-section">
+<section class="grid lineage-section" id="lineageSection" aria-busy="false">
+      <div class="lineage-sync-loading no-print" id="lineageSyncLoading" hidden role="status" aria-live="polite">
+        <span class="lineage-sync-spinner" aria-hidden="true"></span>
+        <span>Sincronizando linhagem...</span>
+      </div>
       <div class="panel">
         <h2>Linhagem</h2>
         <label>Nome da Linhagem<input id="lineageNameInput" data-lineage-field="name" placeholder="Nome da linhagem" /></label>

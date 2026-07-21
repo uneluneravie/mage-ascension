@@ -57,6 +57,7 @@ function sheetUrl(fileName) {
 }
 
 function applySheetData(data, fileName = '', assetBaseUrl = 'fichas') {
+  clearGithubSyncSource();
   clearAiPreview();
   clearState();
   clearLineageState();
@@ -64,6 +65,9 @@ function applySheetData(data, fileName = '', assetBaseUrl = 'fichas') {
   pendingCharacterImageRemovalPath = '';
   currentSheetAssetBaseUrl = assetBaseUrl;
   Object.assign(state, data);
+  clampCharacterCovenResources();
+  if (typeof data.lab === 'string' && !covenState.lab) covenState.lab = data.lab;
+  delete state.lab;
   if (state.creation) {
     delete state.creation.lineageSphereBonusApplied;
     delete state.creation.lineageSphereBonus;
@@ -100,20 +104,22 @@ async function loadLineageFromUrl(baseUrl) {
   try {
     const url = `${baseUrl}/linhagens/${lineageFileName().split('/').map(encodeURIComponent).join('/')}?v=${Date.now()}`;
     const response = await fetch(url);
-    if (!response.ok) return;
+    if (!response.ok) return null;
     const data = await response.json();
     console.log('[github load] Linhagem carregada', {
       url,
       data
     });
     applyLineageData(data);
+    return data;
   } catch (err) {
     console.warn('[lineage] Nao foi possivel carregar a linhagem.', err);
+    return null;
   }
 }
 
 async function loadLineageFromGithub() {
-  await loadLineageFromUrl(githubSheetsRawBase());
+  return loadLineageFromUrl(githubSheetsRawBase());
 }
 
 function githubLineagesApiUrl() {
@@ -221,10 +227,12 @@ function setLineageLoadModalStatus(message) {
 
 function sheetJson() {
   ensureHealthDamage();
+  clampCharacterCovenResources();
   ensureCharacterImagePath();
   ensureCreationSnapshot();
   if (lineageName()) setPath(state, 'identity.lineage', lineageName());
   delete state.lineage;
+  delete state.lab;
   return JSON.stringify(state, null, 2);
 }
 

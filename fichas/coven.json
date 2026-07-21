@@ -1,0 +1,15 @@
+{
+  "name": "",
+  "quintessence": 0,
+  "paradox": 0,
+  "obolOfTheDead": 0,
+  "fame": 0,
+  "lab": "",
+  "pantry": [
+    null, null, null, null,
+    null, null, null, null,
+    null, null, null, null,
+    null, null, null, null
+  ],
+  "lock": null
+}

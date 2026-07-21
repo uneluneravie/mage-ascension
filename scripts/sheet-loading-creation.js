@@ -196,6 +196,7 @@ function setCreationMode(enabled) {
 }
 
 function startNewCharacter() {
+  clearGithubSyncSource();
   clearAiPreview();
   clearState();
   clearLineageState();
@@ -259,8 +260,10 @@ async function loadSheetFromGithub(fileName) {
       url,
       data
     });
-    applySheetData(data, fileName, `${githubRawBase}/fichas`);
-    await loadLineageFromGithub();
+    const sheetsBaseUrl = `${githubRawBase}/fichas`;
+    applySheetData(data, fileName, sheetsBaseUrl);
+    const lineageData = await loadLineageFromUrl(sheetsBaseUrl);
+    setGithubSyncSource({ sheetsBaseUrl, lineageData });
     closeStartModal();
   } catch (err) {
     setStartModalStatus('Não foi possível carregar essa ficha.');
@@ -270,6 +273,7 @@ async function loadSheetFromGithub(fileName) {
 async function loadLocalSheet(file) {
   if (!file) return;
   try {
+    clearGithubSyncSource();
     applySheetData(JSON.parse(await file.text()), file.name, 'fichas');
     closeStartModal();
   } catch (err) {

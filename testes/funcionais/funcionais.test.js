@@ -371,6 +371,61 @@ test('salvar sem nome bloqueia antes de acessar filesystem', () => withApp((win,
   assert.includes(doc.querySelector('[data-field="identity.name"]').validationMessage, 'Preencha o nome');
 }));
 
+test('salvar baixa diretamente os JSONs da ficha e da linhagem', async () => withApp(async (win, doc) => {
+  resetApp(win, { identity: { name: 'Lari', lineage: 'Casa da Lua' } });
+  const lineage = lineageState(win);
+  lineage.name = 'Casa da Lua';
+  lineage.members = [{ id: 'm1', name: 'Lari', chronicle: '', dead: false, lineageContribution: {} }];
+  const downloads = [];
+  win.downloadJsonFile = (fileName, content) => downloads.push({ fileName, content });
+  win.showDirectoryPicker = () => {
+    throw new Error('O salvamento por download nao deve abrir o seletor de pasta.');
+  };
+
+  await win.saveJson();
+
+  assert.deepEqual(downloads.map(download => download.fileName), ['lari.json', 'casa_da_lua.json']);
+  assert.equal(JSON.parse(downloads[0].content).identity.name, 'Lari');
+  assert.equal(JSON.parse(downloads[1].content).name, 'Casa da Lua');
+}));
+
+test('sincronizacao da linhagem preserva edicao local e incorpora mudanca remota', () => withApp((win) => {
+  const lineage = lineageState(win);
+  lineage.name = 'Casa da Lua';
+  lineage.spheres = { life: 1, time: 1 };
+  lineage.sphereExperience = {};
+  lineage.members = [];
+  win.eval(`githubLineageSyncBase = ${JSON.stringify(lineage)}`);
+
+  lineage.spheres.life = 2;
+  win.mergeRemoteLineageData({
+    name: 'Casa da Lua',
+    spheres: { life: 1, time: 3 },
+    sphereExperience: {},
+    members: []
+  });
+
+  assert.equal(lineage.spheres.life, 2);
+  assert.equal(lineage.spheres.time, 3);
+}));
+
+test('pull da linhagem bloqueia a secao enquanto busca o GitHub', async () => withApp(async (win, doc) => {
+  const lineage = lineageState(win);
+  lineage.name = 'Casa da Lua';
+  win.setPath(appState(win), 'identity.lineage', 'Casa da Lua');
+  win.eval("githubLoadedSheetSource = { sheetsBaseUrl: 'https://example.test/fichas', fileName: 'lari.json' }");
+  let releaseFetch;
+  win.fetch = () => new Promise(resolve => { releaseFetch = resolve; });
+
+  const pull = win.pullLatestLineage();
+  assert.equal(doc.getElementById('lineageSection').getAttribute('aria-busy'), 'true');
+  assert.equal(doc.getElementById('lineageNameInput').disabled, true);
+  releaseFetch({ ok: true, json: async () => ({ name: 'Casa da Lua', spheres: {}, sphereExperience: {}, members: [] }) });
+  await pull;
+  assert.equal(doc.getElementById('lineageSection').getAttribute('aria-busy'), 'false');
+  assert.equal(doc.getElementById('lineageNameInput').disabled, false);
+}));
+
 test('Escape fecha modais abertos', () => withApp((win, doc) => {
   resetApp(win, { identity: { name: 'Lari' } });
   click(doc.getElementById('githubUploadBtn'));

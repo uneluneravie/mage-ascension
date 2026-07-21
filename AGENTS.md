@@ -2,7 +2,7 @@
 
 Este projeto e uma ficha editavel de Mage: The Ascension feita com HTML, CSS e JavaScript nativo. O refactor planejado deve preservar o comportamento atual, mas reorganizar os arquivos principais em modulos menores, testaveis e mais faceis de manter.
 
-Antes de qualquer refactor funcional, consulte e rode os testes descritos em `testes/AGENTS.md`.
+Antes de qualquer refactor funcional, consulte `testes/AGENTS.md`. O Codex nao deve executar testes; deve apenas considerar resultados de testes previamente existentes, quando houver.
 
 ## Objetivo Do Refactor
 
@@ -19,7 +19,7 @@ A prioridade e reduzir acoplamento sem alterar regras da ficha, formato dos JSON
 - `app.js`: ponte de compatibilidade para ferramentas antigas; a aplicacao real fica em `scripts/`.
 - `scripts/components/`: componentes e modulos visuais. O shell e composto por templates HTML em JavaScript sem build step:
   - `header-template.js`: cabecalho e acoes principais.
-  - `sheet-sections.js`: identidade, saude, criacao, esferas, atributos, habilidades, antecedentes, notas, convento e linhagem.
+  - `sheet-sections.js`: identidade, saude, criacao, esferas, atributos, habilidades, antecedentes, notas, coven e linhagem.
   - `creation-world-template.js`: secao `Quem voce e no mundo`.
   - `modals-template.js`: autosave e modais.
   - `sheet-shell.js`: composicao final e `renderAppShell()`.
@@ -111,6 +111,7 @@ Preserve estes contratos durante o refactor:
 
 - Formato dos JSONs das fichas.
 - Formato dos JSONs de linhagem.
+- Formato do JSON global do coven em `fichas/coven.json`, incluindo o lock de edicao com expiracao maxima de 10 minutos.
 - Campos `identity`, `attributes`, `abilities`, `spheres`, `advantages`, `backgrounds`, `backgroundJustifications`, `aspirations`, `obsession`, `world`, `health`, `creation`, `creationSnapshot`, `ai`.
 - Compatibilidade com `health.level` legado.
 - Compatibilidade com linhagem embutida legada em `state.lineage`.
@@ -118,6 +119,15 @@ Preserve estes contratos durante o refactor:
 - Caminhos de imagem em `imagens/*.png|jpg`.
 - Nomes de arquivos gerados por `snake_case`.
 - Fluxos de salvar local, upload GitHub, autosave, preview de IA, morte/reviver linhagem e bonus de linhagem.
+- Fluxo read-only do coven, aquisicao/verificacao/liberacao do lock e sincronizacao do arquivo global.
+- Inventario da dispensa do coven com 16 slots, metadados no JSON global e imagens separadas em `fichas/imagens/coven/`.
+- Fama do coven persistida como nivel de 0 a 6, com classificacao e descricao apresentadas na interface.
+- `obolOfTheDead` persiste o valor numerico do dinheiro compartilhado do coven, exibido como `Óbolo dos Mortos`.
+- Layout do coven em duas linhas: Recursos e Dispensa em colunas na primeira, Laboratorio ocupando a segunda; no mobile, as colunas devem ser empilhadas.
+- A seção Anotacoes ocupa toda a largura e aparece imediatamente abaixo do coven. Paradigma, Foco e Instrumentos nao possui mais painel proprio na ficha.
+- O nome do coven e persistido em `name` no arquivo global e aparece no topo da subseção Recursos.
+- Quintessencia e Paradoxo do coven sao transferidos da ficha: 2 Quintessencias do personagem geram 1 no coven; 1 Paradoxo do personagem gera 2 no coven. Ambos os recursos do personagem tem limite 10; o coven nao tem limite.
+- Ao atingir 10 minutos, a edicao do coven deve salvar automaticamente, remover o lock quando ainda pertencer a sessao e voltar ao modo somente leitura. Em caso de falha, deve pausar a edicao e informar que o salvamento falhou.
 
 Se algum contrato precisar mudar, implemente migracao e testes antes de alterar o formato persistido.
 
@@ -151,12 +161,13 @@ Antecedentes disponiveis na UI, em ordem alfabetica e com nomes em portugues:
 
 ## Diretrizes De Teste Para Refactor
 
-- Antes de mover codigo, rode os testes existentes relevantes.
+- O Codex nao deve executar testes, servidores de teste ou runners automatizados.
+- Antes de mover codigo, consulte os testes existentes relevantes e resultados previamente registrados, quando houver.
 - Ao extrair uma regra para modulo proprio, adicione ou mova testes unitarios para cobrir essa regra diretamente.
 - Ao extrair UI/componente, mantenha ou adicione teste funcional para o fluxo do usuario.
-- Alteracao pequena/local: rode apenas os testes relacionados ao local alterado. Se ainda nao existirem testes para cobrir, crie cobertura automatizada de pelo menos 90% do codigo afetado.
-- Alteracao major: rode todos os testes em `testes/index.html`.
-- O refactor so deve ser considerado concluido quando os fluxos listados em `testes/AGENTS.md` continuarem passando ou tiverem testes atualizados para o novo contrato.
+- Alteracao pequena/local: atualize os testes relacionados ao local alterado. Se ainda nao existirem testes para cobrir, crie cobertura automatizada de pelo menos 90% do codigo afetado, sem executa-la.
+- Alteracao major: atualize a cobertura de todas as suites em `testes/index.html`, sem executa-las.
+- O refactor so deve ser considerado concluido quando os fluxos listados em `testes/AGENTS.md` tiverem cobertura compativel com o novo contrato. Resultados existentes podem ser considerados, mas nao devem ser gerados pelo Codex.
 
 ## Estilo De Implementacao
 
