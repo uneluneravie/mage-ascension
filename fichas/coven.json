@@ -1,4 +1,5 @@
 {
+  "name": "",
   "quintessence": 1,
   "paradox": 1,
   "obolOfTheDead": 0,
@@ -29,8 +30,8 @@
   ],
   "lock": {
     "owner": "uneluneravie",
-    "sessionId": "1784595596726-zxm20y1fn",
-    "acquiredAt": "2026-07-21T01:03:37.290Z",
-    "expiresAt": "2026-07-21T01:13:37.290Z"
+    "sessionId": "1784597906061-d8aj2uk62d4",
+    "acquiredAt": "2026-07-21T01:40:36.135Z",
+    "expiresAt": "2026-07-21T01:50:36.135Z"
   }
 }
