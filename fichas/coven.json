@@ -2,5 +2,28 @@
   "quintessence": 1,
   "paradox": 1,
   "lab": "teste",
-  "lock": null
+  "pantry": [
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null
+  ],
+  "lock": {
+    "owner": "uneluneravie",
+    "sessionId": "1784594434972-a13fuc8r7o6",
+    "acquiredAt": "2026-07-21T00:41:10.173Z",
+    "expiresAt": "2026-07-21T00:51:10.173Z"
+  }
 }
