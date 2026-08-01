@@ -41,10 +41,10 @@ function backgroundsModalTemplate() {
           <div data-dots="backgrounds.pastLives" data-label="Vidas Passadas"></div>
         </div>
         <div class="background-extra-fields">
-          <label title="coisas que a bruxa deseja a curto prazo">Aspirações
+          <label data-wiki-topic-link="backgrounds" data-wiki-query="Aspirações">Aspirações
             <textarea data-field="aspirations" placeholder="coisas que a bruxa deseja a curto prazo"></textarea>
           </label>
-          <label title="coisas que a bruxa anseia de forma compulsiva a longo prazo">Obsessão / vício
+          <label data-wiki-topic-link="backgrounds" data-wiki-query="Obsessão vício">Obsessão / vício
             <textarea data-field="obsession" placeholder="coisas que a bruxa anseia de forma compulsiva a longo prazo"></textarea>
           </label>
         </div>

@@ -9,7 +9,8 @@
     group.className = 'health-type-actions';
     const label = document.createElement('span');
     label.className = 'health-type-label';
-    label.title = `${type.label}\nExemplos: ${type.examples.join(', ')}`;
+    label.dataset.wikiTopicLink = 'health';
+    label.dataset.wikiQuery = type.label;
     const symbol = document.createElement('span');
     symbol.className = 'health-type-symbol';
     symbol.textContent = type.symbol;

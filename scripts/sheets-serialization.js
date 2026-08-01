@@ -65,6 +65,9 @@ function applySheetData(data, fileName = '', assetBaseUrl = 'fichas') {
   pendingCharacterImageRemovalPath = '';
   currentSheetAssetBaseUrl = assetBaseUrl;
   Object.assign(state, data);
+  if (getPath(state, 'advantages.willpowerTemporary', null) === null) {
+    setPath(state, 'advantages.willpowerTemporary', Number(getPath(state, 'advantages.willpower', 0)) || 0);
+  }
   clampCharacterCovenResources();
   if (typeof data.lab === 'string' && !covenState.lab) covenState.lab = data.lab;
   delete state.lab;
@@ -226,6 +229,7 @@ function setLineageLoadModalStatus(message) {
 }
 
 function sheetJson() {
+  setPath(state, 'advantages.willpowerTemporary', temporaryWillpower());
   ensureHealthDamage();
   clampCharacterCovenResources();
   ensureCharacterImagePath();

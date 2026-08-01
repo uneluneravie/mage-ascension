@@ -383,7 +383,7 @@ const wikiWillpowerGuide = {
   id: 'willpower',
   title: 'Força de Vontade (Willpower)',
   intro: 'Representa a determinação da personagem e pode ser usada de diversas formas, tanto de maneira passiva quanto ativa.',
-  recovery: 'A Força de Vontade temporária é recuperada por meio de descanso, realização de objetivos importantes, interpretação consistente da Natureza ou Comportamento (Demeanor), dependendo da edição, ou recompensas concedidas pela Narradora. Já o valor permanente de Força de Vontade só aumenta com experiência.',
+  recovery: 'A Força de Vontade temporária é recuperada por meio de descanso, realização de objetivos importantes, interpretação consistente da Natureza ou Comportamento (Demeanor), dependendo da edição, ou recompensas concedidas pela Narradora. Já o valor permanente de Força de Vontade só aumenta com experiência. Na ficha, o preenchimento representa os pontos temporários e pode ser alterado livremente; as bordas mais escuras representam níveis permanentes ainda não adquiridos e só ficam disponíveis durante a edição por experiência.',
   uses: [
     ['Sucesso automático', 'Gastar 1 ponto temporário de Força de Vontade concede 1 sucesso automático em uma ação apropriada. Geralmente não pode ser usado em testes de dano ou Absorção, a critério da Narradora, e deve ser declarado antes da rolagem.'],
     ['Resistir a controle mental ou emocional', 'Pode ser exigido um teste de Força de Vontade para resistir a magias de Mente, Dominate de vampiros, Delirium de Garou, intimidação sobrenatural e efeitos semelhantes.'],
@@ -1211,7 +1211,44 @@ function clearWikiSearch() {
   input.focus();
 }
 
+function wikiTopicForLabel(label) {
+  if (label.dataset.wikiTopicLink) return label.dataset.wikiTopicLink;
+  const path = label.dataset.wikiPath || '';
+  if (path.startsWith('attributes.')) return 'attributes';
+  if (path.startsWith('abilities.')) return 'abilities';
+  if (path.startsWith('spheres.')) return 'spheres';
+  if (path.startsWith('advantages.')) return 'advantages';
+  if (path.startsWith('backgrounds.')) return 'backgrounds';
+  return '';
+}
+
+function openWikiFromLabel(label) {
+  const topicId = wikiTopicForLabel(label);
+  const modal = document.getElementById('wikiModal');
+  if (!topicId || !modal) return;
+  activeWikiTopicId = topicId;
+  activeWikiHighlightIndex = 0;
+  pendingWikiHighlightEdge = null;
+  document.getElementById('wikiSearchInput').value = label.dataset.wikiQuery || label.textContent.trim();
+  openWikiModal();
+}
+
+function enhanceWikiTopicLabels() {
+  document.querySelectorAll('[data-wiki-path], [data-wiki-topic-link]').forEach(label => {
+    const query = label.dataset.wikiQuery || label.textContent.trim();
+    label.classList.add('wiki-label-link');
+    label.tabIndex = 0;
+    label.setAttribute('role', 'link');
+    label.setAttribute('aria-label', `Abrir ${query} na wiki`);
+  });
+}
+
+function isNestedWikiLabelControl(target, label) {
+  return target !== label && Boolean(target.closest('input, textarea, select, button, a'));
+}
+
 function bindWiki() {
+  enhanceWikiTopicLabels();
   document.getElementById('openWikiBtn')?.addEventListener('click', openWikiModal);
   document.getElementById('closeWikiModal')?.addEventListener('click', closeWikiModal);
   document.getElementById('wikiSearchInput')?.addEventListener('input', handleWikiSearchInput);
@@ -1220,6 +1257,19 @@ function bindWiki() {
   document.getElementById('clearWikiSearchBtn')?.addEventListener('click', clearWikiSearch);
   document.getElementById('wikiModal')?.addEventListener('click', event => {
     if (event.target.id === 'wikiModal') closeWikiModal();
+  });
+  document.addEventListener('click', event => {
+    const label = event.target.closest('[data-wiki-path], [data-wiki-topic-link]');
+    if (!label || isNestedWikiLabelControl(event.target, label)) return;
+    event.preventDefault();
+    openWikiFromLabel(label);
+  });
+  document.addEventListener('keydown', event => {
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+    const label = event.target.closest('[data-wiki-path], [data-wiki-topic-link]');
+    if (!label) return;
+    event.preventDefault();
+    openWikiFromLabel(label);
   });
   if (document.getElementById('wikiPage')) refreshWiki();
 }

@@ -252,7 +252,6 @@ function makeLineageDots(container) {
   const key = container.dataset.lineageDots;
   const label = container.dataset.label;
   const path = `spheres.${key}`;
-  const description = fieldDescriptions[path] || '';
   const symbol = sphereSymbols[path] || '';
   container.className = 'lineage-dot-row';
   container.innerHTML = '<span class="dot-label"></span><span class="dots"></span>';
@@ -266,14 +265,14 @@ function makeLineageDots(container) {
   } else {
     labelElement.textContent = label;
   }
-  if (description) labelElement.title = description;
+  labelElement.dataset.wikiPath = path;
+  labelElement.dataset.wikiQuery = label;
 
   const dots = container.querySelector('.dots');
   for (let i = 1; i <= 5; i++) {
     const dot = document.createElement('button');
     dot.type = 'button';
     dot.className = 'dot';
-    dot.title = `${label}: ${i}`;
     dot.setAttribute('aria-label', `${label}: ${i}`);
     dot.disabled = true;
     dots.appendChild(dot);

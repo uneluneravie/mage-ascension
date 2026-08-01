@@ -259,6 +259,10 @@ function setDotCost(container, target = null) {
   const current = Number(getPath(state, container.dataset.dots, 0));
   const max = Number(container.dataset.max || 5);
   const nextTarget = target ?? Math.min(current + 1, max);
+  if (container.dataset.dots === 'advantages.willpower' && nextTarget <= current) {
+    cost.textContent = '';
+    return;
+  }
   if (creationMode && !canSetCreationLevel(container.dataset.dots, nextTarget)) {
     cost.textContent = 'atingiu o limite por agora :)';
     return;

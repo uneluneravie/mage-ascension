@@ -133,7 +133,7 @@ function spheresAdvantagesTemplate() {
         <div data-dots="advantages.arcana" data-label="Arcana" data-max="10"></div>
         <div data-dots="advantages.willpower" data-label="Força de Vontade" data-max="10"></div>
         <label class="number-row">
-          <span class="dot-label" title="Energia mágica primordial usada para alimentar efeitos.">Quintessência</span>
+          <span class="dot-label" data-wiki-path="advantages.quintessence" data-wiki-query="Quintessência">Quintessência</span>
           <span class="number-stepper">
             <button class="stepper-btn" type="button" data-stepper="down" data-target="advantages.quintessence" aria-label="Diminuir Quintessência">‹</button>
             <input data-field="advantages.quintessence" data-number-default="0" type="number" min="0" max="10" step="1" value="0" inputmode="numeric" />
@@ -141,7 +141,7 @@ function spheresAdvantagesTemplate() {
           </span>
         </label>
         <label class="number-row">
-          <span class="dot-label" title="Acúmulo da reação da realidade contra magia impossível.">Paradoxo</span>
+          <span class="dot-label" data-wiki-path="advantages.paradox" data-wiki-query="Paradoxo">Paradoxo</span>
           <span class="number-stepper">
             <button class="stepper-btn" type="button" data-stepper="down" data-target="advantages.paradox" aria-label="Diminuir Paradoxo">‹</button>
             <input data-field="advantages.paradox" data-number-default="0" type="number" min="0" max="10" step="1" value="0" inputmode="numeric" />
@@ -251,10 +251,10 @@ function backgroundsTemplate() {
       </div>
 
       <div class="background-extra-fields">
-        <label title="coisas que a bruxa deseja a curto prazo">Aspirações
+        <label data-wiki-topic-link="backgrounds" data-wiki-query="Aspirações">Aspirações
           <textarea data-field="aspirations" placeholder="coisas que a bruxa deseja a curto prazo"></textarea>
         </label>
-        <label title="coisas que a bruxa anseia de forma compulsiva a longo prazo">Obsessão / vício
+        <label data-wiki-topic-link="backgrounds" data-wiki-query="Obsessão vício">Obsessão / vício
           <textarea data-field="obsession" placeholder="coisas que a bruxa anseia de forma compulsiva a longo prazo"></textarea>
         </label>
       </div>
@@ -287,9 +287,9 @@ function covenantTemplate() {
       <label class="coven-name-field">Nome do Coven
         <input data-coven-field="name" type="text" maxlength="120" placeholder="Nome do coven" />
       </label>
-      <label class="number-row"><span class="dot-label" title="Cada ponto do coven consome 2 pontos de Quintessência do personagem.">Quintessência</span><span class="number-stepper"><button class="stepper-btn" type="button" data-coven-stepper="down" data-coven-target="quintessence" aria-label="Devolver Quintessência ao personagem">−</button><input data-coven-field="quintessence" type="number" min="0" step="1" value="0" inputmode="numeric" readonly /><button class="stepper-btn" type="button" data-coven-stepper="up" data-coven-target="quintessence" aria-label="Transferir Quintessência do personagem">+</button></span></label>
-      <label class="number-row"><span class="dot-label" title="Cada ponto de Paradoxo do personagem adiciona 2 pontos ao coven.">Paradoxo</span><span class="number-stepper"><button class="stepper-btn" type="button" data-coven-stepper="down" data-coven-target="paradox" aria-label="Devolver Paradoxo ao personagem">−</button><input data-coven-field="paradox" type="number" min="0" step="2" value="0" inputmode="numeric" readonly /><button class="stepper-btn" type="button" data-coven-stepper="up" data-coven-target="paradox" aria-label="Transferir Paradoxo do personagem">+</button></span></label>
-      <label class="number-row"><span class="dot-label" title="Dinheiro compartilhado do coven.">Óbolo dos Mortos</span><span class="number-stepper"><button class="stepper-btn" type="button" data-coven-stepper="down" data-coven-target="obolOfTheDead" aria-label="Diminuir Óbolo dos Mortos">‹</button><input data-coven-field="obolOfTheDead" type="number" min="0" max="999999" step="1" value="0" inputmode="numeric" /><button class="stepper-btn" type="button" data-coven-stepper="up" data-coven-target="obolOfTheDead" aria-label="Aumentar Óbolo dos Mortos">›</button></span></label>
+      <label class="number-row"><span class="dot-label" data-wiki-topic-link="coven" data-wiki-query="Quintessência">Quintessência</span><span class="number-stepper"><button class="stepper-btn" type="button" data-coven-stepper="down" data-coven-target="quintessence" aria-label="Devolver Quintessência ao personagem">−</button><input data-coven-field="quintessence" type="number" min="0" step="1" value="0" inputmode="numeric" readonly /><button class="stepper-btn" type="button" data-coven-stepper="up" data-coven-target="quintessence" aria-label="Transferir Quintessência do personagem">+</button></span></label>
+      <label class="number-row"><span class="dot-label" data-wiki-topic-link="coven" data-wiki-query="Paradoxo">Paradoxo</span><span class="number-stepper"><button class="stepper-btn" type="button" data-coven-stepper="down" data-coven-target="paradox" aria-label="Devolver Paradoxo ao personagem">−</button><input data-coven-field="paradox" type="number" min="0" step="2" value="0" inputmode="numeric" readonly /><button class="stepper-btn" type="button" data-coven-stepper="up" data-coven-target="paradox" aria-label="Transferir Paradoxo do personagem">+</button></span></label>
+      <label class="number-row"><span class="dot-label" data-wiki-topic-link="coven" data-wiki-query="Óbolo dos Mortos">Óbolo dos Mortos</span><span class="number-stepper"><button class="stepper-btn" type="button" data-coven-stepper="down" data-coven-target="obolOfTheDead" aria-label="Diminuir Óbolo dos Mortos">‹</button><input data-coven-field="obolOfTheDead" type="number" min="0" max="999999" step="1" value="0" inputmode="numeric" /><button class="stepper-btn" type="button" data-coven-stepper="up" data-coven-target="obolOfTheDead" aria-label="Aumentar Óbolo dos Mortos">›</button></span></label>
       <label class="coven-fame-field">Fama
         <select data-coven-field="fame" aria-describedby="covenFameDescription"><option value="0">0 — Profanos</option><option value="1">1 — Despertos</option><option value="2">2 — Iniciados</option><option value="3">3 — Arcanistas</option><option value="4">4 — Oraculares</option><option value="5">5 — Luminares</option><option value="6">6 — Ascendentes</option></select>
         <span id="covenFameDescription" class="coven-fame-description"></span>

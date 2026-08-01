@@ -72,6 +72,7 @@ Diretrizes:
 - Preserve na wiki os mesmos nomes, agrupamentos e ordem conceitual apresentados na ficha. Subsecoes como categorias de Atributos e Habilidades devem refletir a organizacao visual vigente.
 - Garanta que novos termos, sinonimos relevantes e descricoes possam ser encontrados pela pesquisa da wiki e que as correspondencias continuem recebendo highlight.
 - Evite duplicar regras em fontes independentes quando for possivel reutilizar configuracoes ou descricoes existentes da ficha.
+- Ajuda contextual de campos deve abrir o topico correspondente da wiki ao clicar, tocar ou usar o teclado sobre o nome do campo. Nao reintroduza tooltips descritivos baseados apenas em `title`; preserve `title` somente em controles de acao quando ele complementar `aria-label`.
 - Toda alteracao de conteudo, navegacao ou pesquisa da wiki deve atualizar a cobertura funcional correspondente, sem executar os testes.
 
 ## Organizacao Do JavaScript

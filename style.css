@@ -619,6 +619,20 @@ textarea.large { min-height: 220px; }
   opacity: 1;
 }
 .dot.filled { background: var(--gold); }
+.dot-row[data-dots="advantages.willpower"] .dot.permanent-dot {
+  border-color: rgba(255,240,168,.4);
+  opacity: 1;
+}
+.level-editing .dot-row[data-dots="advantages.willpower"] .dot.permanent-dot {
+  border-color: rgba(255,240,168,.72);
+}
+.dot-row[data-dots="advantages.willpower"] .dot.unobtained-permanent-dot {
+  border-color: rgba(73,55,28,.95);
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,.32);
+}
+.dot-row[data-dots="advantages.willpower"] .dot.unobtained-permanent-dot:disabled {
+  opacity: 1;
+}
 .dot.lineage-bonus-dot {
   background: #b33a32;
   border-color: #ff9a8f;
@@ -1479,6 +1493,14 @@ textarea.large { min-height: 220px; }
   outline: 2px solid var(--gold-2);
   outline-offset: 2px;
   background: #fff0a8;
+}
+.wiki-label-link {
+  cursor: pointer;
+}
+.wiki-label-link:focus-visible {
+  border-radius: 2px;
+  outline: 2px solid var(--gold-2);
+  outline-offset: 2px;
 }
 .wiki-empty-state {
   margin: auto;

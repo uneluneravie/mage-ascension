@@ -89,6 +89,25 @@ test('wiki abre, filtra topicos, destaca resultados e limpa a pesquisa', () => w
   assert.equal(modal.hidden, true);
 }));
 
+test('nomes dos campos abrem diretamente o topico correspondente da wiki', () => withApp((win, doc) => {
+  const strength = doc.querySelector('[data-dots="attributes.strength"] .dot-label');
+  assert.equal(strength.getAttribute('title'), null);
+  assert.equal(strength.getAttribute('role'), 'link');
+  assert.equal(strength.getAttribute('tabindex'), '0');
+  click(strength);
+  assert.equal(doc.getElementById('wikiModal').hidden, false);
+  assert.equal(doc.getElementById('wikiSearchInput').value, 'Força');
+  assert.equal(doc.querySelector('[data-wiki-topic="attributes"]').classList.contains('is-active'), true);
+  assert(doc.querySelector('.wiki-highlight.is-current'));
+
+  win.closeWikiModal();
+  const aggravated = doc.querySelector('.health-type-label[data-wiki-query="Agravado"]');
+  assert.equal(aggravated.getAttribute('title'), null);
+  click(aggravated);
+  assert.equal(doc.getElementById('wikiSearchInput').value, 'Agravado');
+  assert.equal(doc.querySelector('[data-wiki-topic="health"]').classList.contains('is-active'), true);
+}));
+
 test('wiki agrupa atributos e habilidades como a ficha', () => withApp((win, doc) => {
   click(doc.getElementById('openWikiBtn'));
   click(doc.querySelector('[data-wiki-topic="attributes"]'));
@@ -375,6 +394,44 @@ test('editar bolinhas consome XP e permite reduzir devolvendo XP', () => withApp
   click(dot(doc, 'attributes.strength', 3));
   assert.equal(win.getPath(appState(win), 'attributes.strength'), 2);
   assert.equal(win.getPath(appState(win), 'identity.experience'), 92);
+}));
+
+test('forca de vontade temporaria e livre e limitada pelo valor permanente', () => withApp((win, doc) => {
+  resetApp(win, { identity: { experience: 20 }, advantages: { willpower: 3, willpowerTemporary: 3 } });
+  const state = appState(win);
+  const row = doc.querySelector('[data-dots="advantages.willpower"]');
+  assert.equal(row.querySelectorAll('.dot.filled').length, 3);
+  assert.equal(dot(doc, 'advantages.willpower', 4).classList.contains('unobtained-permanent-dot'), true);
+  click(dot(doc, 'advantages.willpower', 3));
+  assert.equal(win.getPath(state, 'advantages.willpowerTemporary'), 2);
+  assert.equal(win.getPath(state, 'identity.experience'), 20);
+  click(dot(doc, 'advantages.willpower', 3));
+  assert.equal(win.getPath(state, 'advantages.willpowerTemporary'), 3);
+  click(dot(doc, 'advantages.willpower', 4));
+  assert.equal(win.getPath(state, 'advantages.willpower'), 3);
+  assert.equal(win.getPath(state, 'advantages.willpowerTemporary'), 3);
+}));
+
+test('forca de vontade permanente so aumenta na edicao por XP', () => withApp((win, doc) => {
+  resetApp(win, { identity: { experience: 20 }, advantages: { willpower: 3, willpowerTemporary: 2 } });
+  const state = appState(win);
+  click(doc.getElementById('levelEditBtn'));
+  click(dot(doc, 'advantages.willpower', 4));
+  assert.equal(win.getPath(state, 'advantages.willpower'), 4);
+  assert.equal(win.getPath(state, 'advantages.willpowerTemporary'), 2);
+  assert.equal(win.getPath(state, 'identity.experience'), 16);
+  click(dot(doc, 'advantages.willpower', 3));
+  assert.equal(win.getPath(state, 'advantages.willpower'), 4);
+  assert.equal(win.getPath(state, 'advantages.willpowerTemporary'), 3);
+  assert.equal(win.getPath(state, 'identity.experience'), 16);
+}));
+
+test('forca de vontade comprada na criacao comeca temporariamente cheia', () => withApp((win, doc) => {
+  click(doc.getElementById('newCharacterBtn'));
+  click(dot(doc, 'advantages.willpower', 3));
+  assert.equal(win.getPath(appState(win), 'advantages.willpower'), 3);
+  assert.equal(win.getPath(appState(win), 'advantages.willpowerTemporary'), 3);
+  assert.equal(doc.querySelectorAll('[data-dots="advantages.willpower"] .dot.filled').length, 3);
 }));
 
 test('antecedentes nao sobem por XP depois da criacao', () => withApp((win, doc) => {

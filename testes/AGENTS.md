@@ -162,4 +162,4 @@ Inclui modal inicial, fichas, Antecedentes, GitHub, IA, carregar linhagem, morte
 
 ### Acessibilidade E Estado Visual
 
-Inclui `aria-label`, `role=checkbox`, `aria-checked`, estados disabled, classes de sugestao da IA e classes de bonus de linhagem. Mudancas funcionais devem preservar sinais visuais e atributos acessiveis que comunicam estado.
+Inclui `aria-label`, `role=checkbox`, `aria-checked`, estados disabled, classes de sugestao da IA e classes de bonus de linhagem. Mudancas funcionais devem preservar sinais visuais e atributos acessiveis que comunicam estado. Nomes de campos com ajuda contextual devem abrir o topico correspondente da wiki por clique, toque, Enter ou Espaco, sem depender de tooltip `title`.

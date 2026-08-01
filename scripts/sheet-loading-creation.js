@@ -211,6 +211,7 @@ function startNewCharacter() {
   };
   dotPaths().forEach(path => setPath(state, path, 0));
   setPath(state, 'advantages.arcana', 1);
+  setPath(state, 'advantages.willpowerTemporary', 0);
   setPath(state, 'identity.experience', 15);
   setPath(state, 'health.damage', []);
   setPath(state, 'health.level', healthLevels[0].value);
