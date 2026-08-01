@@ -9,6 +9,7 @@
   loadCoven();
   bindAiQuestions();
   bindCharacterImageUpload();
+  bindWiki();
   populatePriorityControls();
   bindPriorityControls();
   setCreationMode(false);
@@ -65,6 +66,7 @@
       closeLineageReviveModal();
       closeCharacterImageRemoveModal();
       closeCovenItemModal();
+      closeWikiModal();
     }
   });
   document.getElementById('saveBtn').addEventListener('click', saveJson);

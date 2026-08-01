@@ -158,7 +158,7 @@ Inclui perguntas salvas em `state.ai`, geracao de prompt via `window.aiPromptTem
 
 ### Modais E Navegacao
 
-Inclui modal inicial, fichas, Antecedentes, GitHub, IA, carregar linhagem, morte, reviver e remover imagem. Todos devem fechar por botao, backdrop quando aplicavel e Escape. Cancelamentos devem limpar estados pendentes.
+Inclui modal inicial, fichas, Antecedentes, GitHub, IA, carregar linhagem, morte, reviver, remover imagem e wiki. Todos devem fechar por botao, backdrop quando aplicavel e Escape. Cancelamentos devem limpar estados pendentes. A wiki deve reutilizar o mesmo template, conteudo, pesquisa e navegacao no modal e em `wiki.html`; o modal da wiki e o modal inicial devem oferecer acesso a pagina inteira em uma nova aba.
 
 ### Acessibilidade E Estado Visual
 

@@ -36,6 +36,179 @@ test('inicializacao renderiza controles principais', () => withApp((win, doc) =>
   assert.includes(doc.getElementById('healthStatus').textContent, 'Saud');
 }));
 
+test('wiki abre, filtra topicos, destaca resultados e limpa a pesquisa', () => withApp((win, doc) => {
+  const modalFullPageLink = doc.querySelector('#wikiModal .wiki-open-page');
+  const startFullPageLink = doc.getElementById('openStartWikiBtn');
+  assert.equal(modalFullPageLink.getAttribute('href'), 'wiki.html');
+  assert.equal(modalFullPageLink.getAttribute('target'), '_blank');
+  assert.equal(startFullPageLink.getAttribute('href'), 'wiki.html');
+  assert.equal(startFullPageLink.getAttribute('target'), '_blank');
+  const fullPageTemplate = win.wikiFullPageTemplate();
+  assert.includes(fullPageTemplate, 'id="wikiPage"');
+  assert.includes(fullPageTemplate, 'id="wikiTopicMenu"');
+  assert.includes(fullPageTemplate, 'id="wikiTopicContent"');
+
+  click(doc.getElementById('openWikiBtn'));
+  const modal = doc.getElementById('wikiModal');
+  const search = doc.getElementById('wikiSearchInput');
+  assert.equal(modal.hidden, false);
+  assert.equal(search.type, 'text');
+  assert.equal(search.getAttribute('role'), 'searchbox');
+  assert.equal(doc.querySelectorAll('#clearWikiSearchBtn').length, 1);
+  assert.equal(doc.querySelectorAll('#previousWikiMatchBtn, #nextWikiMatchBtn').length, 2);
+  assert.equal(doc.getElementById('previousWikiMatchBtn').disabled, true);
+  assert.equal(doc.getElementById('nextWikiMatchBtn').disabled, true);
+  assert.equal(doc.querySelectorAll('[data-wiki-topic]').length, 12);
+
+  input(search, 'teletransporte');
+  const visibleTopics = Array.from(doc.querySelectorAll('[data-wiki-topic]')).map(button => button.textContent);
+  assert.deepEqual(visibleTopics, ['Esferas']);
+  assert.equal(doc.querySelector('[data-wiki-topic="spheres"]').classList.contains('is-active'), true);
+  assert.includes(doc.querySelector('.wiki-highlight').textContent.toLowerCase(), 'teletransporte');
+  assert.equal(doc.querySelectorAll('.wiki-highlight.is-current').length, 1);
+  assert.equal(doc.getElementById('previousWikiMatchBtn').disabled, false);
+  assert.equal(doc.getElementById('nextWikiMatchBtn').disabled, false);
+  assert.equal(doc.getElementById('clearWikiSearchBtn').hidden, false);
+
+  click(doc.getElementById('previousWikiMatchBtn'));
+  let highlights = Array.from(doc.querySelectorAll('.wiki-highlight'));
+  assert.equal(highlights[highlights.length - 1].classList.contains('is-current'), true);
+  click(doc.getElementById('nextWikiMatchBtn'));
+  highlights = Array.from(doc.querySelectorAll('.wiki-highlight'));
+  assert.equal(highlights[0].classList.contains('is-current'), true);
+
+  click(doc.getElementById('clearWikiSearchBtn'));
+  assert.equal(search.value, '');
+  assert.equal(doc.querySelectorAll('[data-wiki-topic]').length, 12);
+  assert.equal(doc.querySelector('.wiki-highlight'), null);
+  assert.equal(doc.getElementById('previousWikiMatchBtn').disabled, true);
+  assert.equal(doc.getElementById('nextWikiMatchBtn').disabled, true);
+
+  click(doc.getElementById('closeWikiModal'));
+  assert.equal(modal.hidden, true);
+}));
+
+test('wiki agrupa atributos e habilidades como a ficha', () => withApp((win, doc) => {
+  click(doc.getElementById('openWikiBtn'));
+  click(doc.querySelector('[data-wiki-topic="attributes"]'));
+  assert.deepEqual(
+    Array.from(doc.querySelectorAll('.wiki-entry-group-title')).map(title => title.textContent),
+    ['Físicos', 'Sociais', 'Mentais']
+  );
+
+  click(doc.querySelector('[data-wiki-topic="abilities"]'));
+  assert.deepEqual(
+    Array.from(doc.querySelectorAll('.wiki-entry-group-title')).map(title => title.textContent),
+    ['Talentos', 'Perícias', 'Conhecimentos']
+  );
+  assert.equal(doc.querySelector('[data-wiki-topic="creation"]'), null);
+  assert.equal(doc.querySelector('[data-wiki-topic="world"]'), null);
+}));
+
+test('wiki exibe combate logo depois de habilidades com fluxo e exemplos', () => withApp((win, doc) => {
+  click(doc.getElementById('openWikiBtn'));
+  const topics = Array.from(doc.querySelectorAll('[data-wiki-topic]'));
+  const abilitiesIndex = topics.findIndex(button => button.dataset.wikiTopic === 'abilities');
+  assert.equal(topics[abilitiesIndex + 1].dataset.wikiTopic, 'combat');
+
+  click(doc.querySelector('[data-wiki-topic="combat"]'));
+  assert.equal(doc.querySelectorAll('.wiki-combat-flow > li').length, 4);
+  assert.equal(doc.querySelectorAll('.wiki-soak-table tbody tr').length, 3);
+  assert.equal(doc.querySelectorAll('.wiki-magic-protection-table tbody tr').length, 3);
+  assert.equal(doc.querySelectorAll('.wiki-combat-examples-table tbody tr').length, 4);
+  const combatText = doc.getElementById('wikiTopicContent').textContent;
+  assert.includes(combatText, 'Força 3 + Briga 2');
+  assert.includes(combatText, 'Destreza 3 + Armas de Fogo 2');
+  assert.includes(combatText, 'Arcana 3 = 3 dados');
+  assert.includes(combatText, 'Contusão');
+  assert.includes(combatText, 'Agravado');
+  assert.includes(combatText, 'não existe uma mecânica universal');
+  assert.includes(combatText, 'Matéria, Forças, Primórdio');
+  assert.includes(combatText, 'Forças, Espaço, Primórdio, Tempo');
+  assert.equal(combatText.includes('Matter, Forces, Prime'), false);
+  assert.equal(combatText.includes('Forces, Correspondence, Prime, Time'), false);
+}));
+
+test('wiki detalha esferas na ordem da ficha e indexa os niveis', () => withApp((win, doc) => {
+  click(doc.getElementById('openWikiBtn'));
+  click(doc.querySelector('[data-wiki-topic="spheres"]'));
+  const levelSummary = doc.querySelector('.wiki-level-summary');
+  assert.equal(levelSummary.querySelector('.wiki-entry-group-title').textContent, 'Resumo por nível');
+  assert.equal(levelSummary.querySelectorAll('tbody tr').length, 5);
+  assert.includes(levelSummary.textContent, 'Domínio quase ilimitado da Esfera.');
+  assert.deepEqual(
+    Array.from(doc.querySelectorAll('[data-wiki-sphere]')).map(section => section.dataset.wikiSphere),
+    ['spheres.fate', 'spheres.space', 'spheres.spirit', 'spheres.forces', 'spheres.matter',
+      'spheres.mind', 'spheres.death', 'spheres.prime', 'spheres.time', 'spheres.life']
+  );
+  doc.querySelectorAll('[data-wiki-sphere]').forEach(section => {
+    assert.equal(section.querySelectorAll('.wiki-level-table tbody tr').length, 5);
+    assert(section.querySelector('.wiki-examples-table'));
+  });
+  assert.includes(
+    doc.querySelector('[data-wiki-sphere="spheres.spirit"] .wiki-sphere-definition').textContent,
+    'entidade da Sombra'
+  );
+  assert.includes(
+    doc.querySelector('[data-wiki-sphere="spheres.spirit"] .wiki-sphere-definition').textContent,
+    'espírito do sofrimento'
+  );
+  assert.includes(
+    doc.querySelector('[data-wiki-sphere="spheres.death"] .wiki-sphere-definition').textContent,
+    'eco de uma pessoa morta'
+  );
+  const forceExamples = doc.querySelector('[data-wiki-sphere="spheres.forces"] .wiki-examples-table');
+  assert.equal(forceExamples.querySelectorAll('tbody tr').length, 4);
+  assert.includes(forceExamples.textContent, 'Forças ●●● + Primórdio ●●');
+  assert.includes(forceExamples.textContent, 'Forças ●●● + Espaço ●●');
+  const translatedRequirements = Array.from(
+    doc.querySelectorAll('.wiki-examples-table tbody td:nth-child(2)')
+  ).map(cell => cell.textContent).join(' ');
+  ['Fate', 'Correspondence', 'Spirit', 'Forces', 'Matter', 'Mind', 'Death', 'Prime', 'Time', 'Life']
+    .forEach(name => assert.equal(translatedRequirements.includes(name), false));
+  ['Destino', 'Espaço', 'Espírito', 'Forças', 'Matéria', 'Mente', 'Morte', 'Primórdio', 'Tempo', 'Vida']
+    .forEach(name => assert.includes(translatedRequirements, name));
+
+  input(doc.getElementById('wikiSearchInput'), 'teletransportar pessoas');
+  assert.deepEqual(
+    Array.from(doc.querySelectorAll('[data-wiki-topic]')).map(button => button.textContent),
+    ['Esferas']
+  );
+  assert(doc.querySelectorAll('.wiki-highlight').length >= 2);
+}));
+
+test('wiki exibe conjuracao logo depois de esferas com fluxo, paradoxo e exemplo', () => withApp((win, doc) => {
+  click(doc.getElementById('openWikiBtn'));
+  const topics = Array.from(doc.querySelectorAll('[data-wiki-topic]'));
+  const spheresIndex = topics.findIndex(button => button.dataset.wikiTopic === 'spheres');
+  assert.equal(topics[spheresIndex + 1].dataset.wikiTopic, 'spellcasting');
+
+  click(doc.querySelector('[data-wiki-topic="spellcasting"]'));
+  assert.equal(doc.querySelectorAll('.wiki-spellcasting-flow > li').length, 6);
+  assert.equal(doc.querySelectorAll('.wiki-spellcasting-table').length, 4);
+  const content = doc.getElementById('wikiTopicContent').textContent;
+  assert.includes(content, '3–6');
+  assert.includes(content, 'Falha crítica (Botch)');
+  assert.includes(content, 'Prisão Temporal de Fogo');
+  assert.includes(content, 'Forças ●●●●');
+  assert.includes(content, 'Tempo ●●●●');
+  assert.includes(content, 'Diante de Adormecidos');
+  assert.includes(content, 'Usando magias e habilidades em conjunto');
+  assert.includes(content, 'Magia aprimorando Habilidades');
+  assert.includes(content, 'Habilidades viabilizando Magias');
+  assert.includes(content, 'Medicina, Ciência, Ocultismo, Ofícios ou Armas de Fogo');
+  assert.includes(content, 'Magia em Conjunto (Rituais Cooperativos)');
+  assert.includes(content, 'cada sucesso obtido concede +1 dado');
+  assert.includes(content, 'Forças ●●●●');
+  assert.includes(content, 'Primórdio ●●●');
+  assert.includes(content, 'concede +2 dados');
+  assert.equal(content.includes('Forces ●●●●'), false);
+  assert.equal(content.includes('Prime ●●●'), false);
+  assert.equal(content.includes('Time ●●●●'), false);
+  assert.equal(content.includes('teste de Arcana'), false);
+  assert.equal(content.includes('Medicine'), false);
+}));
+
 test('antecedentes aparecem traduzidos em ordem alfabetica', () => withApp((win, doc) => {
   const labels = Array.from(doc.querySelectorAll('.backgrounds-panel .background-grid [data-dots]'))
     .map(element => element.dataset.label);

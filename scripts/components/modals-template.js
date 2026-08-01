@@ -145,6 +145,13 @@ function startModalTemplate() {
           <span>Carregar</span>
           <input id="localSheetInput" type="file" accept="application/json,.json" />
         </label>
+        <a id="openStartWikiBtn" class="start-action-btn" href="wiki.html" target="_blank" rel="noopener" aria-label="Abrir wiki em página inteira" title="Abrir wiki em página inteira">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M4 5.5A3.5 3.5 0 0 1 7.5 2H20v18H7.5A3.5 3.5 0 0 0 4 23z"></path>
+            <path d="M4 5.5v14"></path><path d="M8 6h8"></path><path d="M8 10h6"></path>
+          </svg>
+          <span>WIKI</span>
+        </a>
       </div>
       <div class="sheet-list" id="gitSheetList"></div>
       <p class="modal-status" id="startModalStatus"></p>

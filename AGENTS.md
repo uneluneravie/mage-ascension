@@ -22,7 +22,11 @@ A prioridade e reduzir acoplamento sem alterar regras da ficha, formato dos JSON
   - `sheet-sections.js`: identidade, saude, criacao, esferas, atributos, habilidades, antecedentes, notas, coven e linhagem.
   - `creation-world-template.js`: secao `Quem voce e no mundo`.
   - `modals-template.js`: autosave e modais.
+  - `wiki-template.js`: estrutura compartilhada da wiki, reutilizada no modal e na pagina inteira.
   - `sheet-shell.js`: composicao final e `renderAppShell()`.
+- `wiki.html`: pagina inteira da wiki; reutiliza o mesmo template, conteudo e comportamento do modal.
+- `scripts/wiki.js`: conteudo, renderizacao, pesquisa e navegacao compartilhados da wiki.
+- `scripts/wiki-page.js`: bootstrap minimo da wiki em pagina inteira.
 - `scripts/integrations/`: integracoes externas e persistencia fora do fluxo principal.
 - `scripts/bootstrap.js`: inicializacao e binding final da aplicacao.
 - `scripts/config.js`: estado global e constantes compartilhadas.
@@ -56,6 +60,19 @@ Diretrizes:
   - linha de membro da linhagem.
 - Mantenha atributos de estado e seletores estaveis enquanto houver testes ou codigo dependendo deles, especialmente `id`, `data-field`, `data-dots`, `data-lineage-*` e atributos de acessibilidade.
 - Nao mova texto visivel ou estrutura sem ajustar os testes funcionais correspondentes.
+
+## Manutencao Da Wiki
+
+A wiki integrada a ficha deve permanecer sincronizada com as regras e o conteudo da interface.
+
+Diretrizes:
+
+- Sempre que uma regra, definicao, campo, controle ou secao for incluida, removida ou alterada na ficha, atualize tambem o topico correspondente na wiki na mesma mudanca.
+- Quando uma nova secao conceitual for criada na ficha, inclua um topico correspondente no menu da wiki, salvo quando houver uma justificativa explicita para agrupa-la em um topico existente.
+- Preserve na wiki os mesmos nomes, agrupamentos e ordem conceitual apresentados na ficha. Subsecoes como categorias de Atributos e Habilidades devem refletir a organizacao visual vigente.
+- Garanta que novos termos, sinonimos relevantes e descricoes possam ser encontrados pela pesquisa da wiki e que as correspondencias continuem recebendo highlight.
+- Evite duplicar regras em fontes independentes quando for possivel reutilizar configuracoes ou descricoes existentes da ficha.
+- Toda alteracao de conteudo, navegacao ou pesquisa da wiki deve atualizar a cobertura funcional correspondente, sem executar os testes.
 
 ## Organizacao Do JavaScript
 

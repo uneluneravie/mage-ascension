@@ -84,6 +84,11 @@ function appFrameHtml() {
   <link rel="stylesheet" href="style.css?v=${appVersion}" />
 </head>
 <body>
+  <script src="scripts/components/header-template.js?v=${appVersion}"></script>
+  <script src="scripts/components/sheet-sections.js?v=${appVersion}"></script>
+  <script src="scripts/components/creation-world-template.js?v=${appVersion}"></script>
+  <script src="scripts/components/modals-template.js?v=${appVersion}"></script>
+  <script src="scripts/components/wiki-template.js?v=${appVersion}"></script>
   <script src="scripts/components/sheet-shell.js?v=${appVersion}"></script>
   <script>renderAppShell();</script>
   <script src="prompt.js?v=${appVersion}"></script>
@@ -93,12 +98,14 @@ function appFrameHtml() {
   <script src="scripts/dots.js?v=${appVersion}"></script>
   <script src="scripts/health-fields.js?v=${appVersion}"></script>
   <script src="scripts/lineage.js?v=${appVersion}"></script>
+  <script src="scripts/coven.js?v=${appVersion}"></script>
   <script src="scripts/sheets-serialization.js?v=${appVersion}"></script>
   <script src="scripts/github-sync.js?v=${appVersion}"></script>
   <script src="scripts/autosave.js?v=${appVersion}"></script>
   <script src="scripts/sheet-loading-creation.js?v=${appVersion}"></script>
   <script src="scripts/github-ui.js?v=${appVersion}"></script>
   <script src="scripts/ai.js?v=${appVersion}"></script>
+  <script src="scripts/wiki.js?v=${appVersion}"></script>
   <script src="scripts/integrations/github.js?v=${appVersion}"></script>
   <script src="scripts/integrations/local-files.js?v=${appVersion}"></script>
   <script src="scripts/bootstrap.js?v=${appVersion}"></script>

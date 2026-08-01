@@ -20,6 +20,7 @@ function appShellTemplate() {
   return `
   ${sheetMainTemplate()}
   ${autosaveIndicatorTemplate()}
+  ${wikiModalTemplate()}
   ${backgroundsModalTemplate()}
   ${sheetModalTemplate()}
   ${startModalTemplate()}

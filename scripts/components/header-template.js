@@ -5,6 +5,14 @@ function shellHeaderTemplate() {
         <h2>Mage: The Ascension</h2>
       </div>
       <div class="actions no-print">
+        <button id="openWikiBtn" class="icon-btn" type="button" aria-label="Abrir wiki da ficha" aria-controls="wikiModal" title="Wiki da ficha">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M4 5.5A3.5 3.5 0 0 1 7.5 2H20v18H7.5A3.5 3.5 0 0 0 4 23z"></path>
+            <path d="M4 5.5v14"></path>
+            <path d="M8 6h8"></path>
+            <path d="M8 10h6"></path>
+          </svg>
+        </button>
         <button id="saveBtn" class="icon-btn" type="button" aria-label="Baixar ficha" title="Baixar ficha">
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <path d="M12 3v12"></path>
