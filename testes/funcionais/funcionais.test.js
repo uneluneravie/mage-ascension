@@ -59,6 +59,7 @@ test('wiki abre, filtra topicos, destaca resultados e limpa a pesquisa', () => w
   assert.equal(doc.getElementById('previousWikiMatchBtn').disabled, true);
   assert.equal(doc.getElementById('nextWikiMatchBtn').disabled, true);
   assert.equal(doc.querySelectorAll('[data-wiki-topic]').length, 12);
+  assert.equal(doc.querySelector('[data-wiki-topic="notes"]'), null);
 
   input(search, 'teletransporte');
   const visibleTopics = Array.from(doc.querySelectorAll('[data-wiki-topic]')).map(button => button.textContent);
@@ -112,12 +113,19 @@ test('wiki exibe combate logo depois de habilidades com fluxo e exemplos', () =>
   assert.equal(topics[abilitiesIndex + 1].dataset.wikiTopic, 'combat');
 
   click(doc.querySelector('[data-wiki-topic="combat"]'));
+  assert.equal(
+    doc.querySelector('.wiki-combat-initiative').nextElementSibling.classList.contains('wiki-combat-flow'),
+    true
+  );
   assert.equal(doc.querySelectorAll('.wiki-combat-flow > li').length, 4);
   assert.equal(doc.querySelectorAll('.wiki-soak-table tbody tr').length, 3);
   assert.equal(doc.querySelectorAll('.wiki-magic-protection-table tbody tr').length, 3);
   assert.equal(doc.querySelectorAll('.wiki-combat-examples-table tbody tr').length, 4);
   const combatText = doc.getElementById('wikiTopicContent').textContent;
   assert.includes(combatText, 'Força 3 + Briga 2');
+  assert.includes(combatText, 'Destreza + Raciocínio');
+  assert.includes(combatText, 'quem obtiver mais sucessos age primeiro');
+  assert.equal(combatText.includes('Dexterity + Wits'), false);
   assert.includes(combatText, 'Destreza 3 + Armas de Fogo 2');
   assert.includes(combatText, 'Arcana 3 = 3 dados');
   assert.includes(combatText, 'Contusão');
@@ -207,6 +215,56 @@ test('wiki exibe conjuracao logo depois de esferas com fluxo, paradoxo e exemplo
   assert.equal(content.includes('Time ●●●●'), false);
   assert.equal(content.includes('teste de Arcana'), false);
   assert.equal(content.includes('Medicine'), false);
+}));
+
+test('wiki exibe acoes reativas logo depois de conjurar magias', () => withApp((win, doc) => {
+  click(doc.getElementById('openWikiBtn'));
+  const topics = Array.from(doc.querySelectorAll('[data-wiki-topic]'));
+  const castingIndex = topics.findIndex(button => button.dataset.wikiTopic === 'spellcasting');
+  assert.equal(topics[castingIndex + 1].dataset.wikiTopic, 'reactions');
+
+  click(doc.querySelector('[data-wiki-topic="reactions"]'));
+  const content = doc.getElementById('wikiTopicContent').textContent;
+  assert.includes(content, 'Reações (Reflexes)');
+  assert.includes(content, 'uma reação por rodada');
+  assert.includes(content, 'antes da ação que a desencadeou');
+  assert.includes(content, 'magia defensiva');
+  assert.includes(content, 'Contramágica (Countermagic)');
+  assert.includes(content, 'teste de Arcana');
+  assert.includes(content, 'Cada sucesso obtido reduz 1 sucesso');
+  assert.equal(content.includes('teste de Arcana'), false);
+}));
+
+test('wiki detalha os usos e a recuperacao de forca de vontade', () => withApp((win, doc) => {
+  click(doc.getElementById('openWikiBtn'));
+  click(doc.querySelector('[data-wiki-topic="advantages"]'));
+  const guide = doc.querySelector('[data-wiki-advantage-guide="willpower"]');
+  assert.includes(guide.querySelector('.wiki-content-section-title').textContent, 'Força de Vontade (Willpower)');
+  assert.equal(guide.querySelectorAll('.wiki-advantage-table tbody tr').length, 6);
+  const content = guide.textContent;
+  assert.includes(content, 'Força de Vontade temporária');
+  assert.includes(content, 'valor permanente');
+  assert.includes(content, '1 sucesso automático');
+  assert.includes(content, 'magias de Mente');
+  assert.includes(content, 'testes de dano ou Absorção');
+  assert.equal(content.includes('magias de Mind'), false);
+  assert.equal(content.includes('testes de dano ou soak'), false);
+}));
+
+test('wiki detalha fontes e usos de quintessencia', () => withApp((win, doc) => {
+  click(doc.getElementById('openWikiBtn'));
+  click(doc.querySelector('[data-wiki-topic="advantages"]'));
+  const guide = doc.querySelector('[data-wiki-advantage-guide="quintessence"]');
+  assert.equal(guide.querySelectorAll('.wiki-advantage-table tbody tr').length, 5);
+  const content = guide.textContent;
+  assert.includes(content, 'Nodos (Nodes)');
+  assert.includes(content, 'Tass');
+  assert.includes(content, 'Esfera Primórdio');
+  assert.includes(content, 'teste de Arcana');
+  assert.includes(content, 'Reduzir a dificuldade da magia');
+  assert.includes(content, 'Interagir com Primórdio');
+  assert.equal(content.includes('teste de Arcana'), false);
+  assert.equal(content.includes('Esfera Prime'), false);
 }));
 
 test('antecedentes aparecem traduzidos em ordem alfabetica', () => withApp((win, doc) => {

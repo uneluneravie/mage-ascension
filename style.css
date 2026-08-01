@@ -1263,6 +1263,21 @@ textarea.large { min-height: 220px; }
   margin: 0;
   padding-left: 24px;
 }
+.wiki-combat-initiative {
+  margin: 0 0 26px;
+  padding: 12px 14px;
+  border-left: 3px solid var(--gold);
+  background: rgba(214, 173, 80, .08);
+}
+.wiki-combat-initiative h4 {
+  margin: 0 0 7px;
+  color: var(--gold-2);
+  font-size: 15px;
+}
+.wiki-combat-initiative p {
+  margin: 0;
+  line-height: 1.6;
+}
 .wiki-combat-flow > li {
   margin-bottom: 24px;
   padding-left: 6px;
@@ -1376,6 +1391,31 @@ textarea.large { min-height: 220px; }
   color: var(--gold-2);
   font-weight: 700;
   white-space: nowrap;
+}
+.wiki-advantage-table {
+  width: 100%;
+  min-width: 680px;
+  border-collapse: collapse;
+}
+.wiki-advantage-table th,
+.wiki-advantage-table td {
+  padding: 9px 10px;
+  border-bottom: 1px solid rgba(214, 173, 80, .22);
+  text-align: left;
+  vertical-align: top;
+  line-height: 1.5;
+}
+.wiki-advantage-table thead th {
+  color: var(--muted);
+  font-size: 10px;
+  text-transform: uppercase;
+}
+.wiki-advantage-table td:first-child {
+  color: var(--gold-2);
+  font-weight: 700;
+}
+.wiki-advantage-guide > p {
+  line-height: 1.6;
 }
 .wiki-content-section-title {
   margin: 30px 0 10px;

@@ -187,6 +187,10 @@ const wikiSphereGuides = [
 ];
 
 const wikiCombatGuide = {
+  initiative: {
+    title: 'Ordem dos turnos e Iniciativa',
+    text: 'A ordem dos turnos é definida por uma rolagem de Iniciativa no início de cada combate. Cada participante realiza um teste de Destreza + Raciocínio, com dificuldade padrão, e o número de sucessos determina sua posição na rodada: quem obtiver mais sucessos age primeiro, seguido pelos demais em ordem decrescente. Em caso de empate, age primeiro quem possuir maior Destreza; persistindo o empate, a Narradora decide a ordem de forma apropriada à cena. A Iniciativa normalmente é rolada apenas uma vez e sua ordem permanece a mesma até o fim do combate, salvo efeitos mágicos ou habilidades que a alterem.'
+  },
   steps: [
     {
       title: 'Teste de Ataque',
@@ -375,6 +379,35 @@ const wikiSpellcastingGuide = {
   }
 };
 
+const wikiWillpowerGuide = {
+  id: 'willpower',
+  title: 'Força de Vontade (Willpower)',
+  intro: 'Representa a determinação da personagem e pode ser usada de diversas formas, tanto de maneira passiva quanto ativa.',
+  recovery: 'A Força de Vontade temporária é recuperada por meio de descanso, realização de objetivos importantes, interpretação consistente da Natureza ou Comportamento (Demeanor), dependendo da edição, ou recompensas concedidas pela Narradora. Já o valor permanente de Força de Vontade só aumenta com experiência.',
+  uses: [
+    ['Sucesso automático', 'Gastar 1 ponto temporário de Força de Vontade concede 1 sucesso automático em uma ação apropriada. Geralmente não pode ser usado em testes de dano ou Absorção, a critério da Narradora, e deve ser declarado antes da rolagem.'],
+    ['Resistir a controle mental ou emocional', 'Pode ser exigido um teste de Força de Vontade para resistir a magias de Mente, Dominate de vampiros, Delirium de Garou, intimidação sobrenatural e efeitos semelhantes.'],
+    ['Ignorar penalidades temporariamente', 'Em situações dramáticas, a Narradora pode permitir gastar um ponto para agir apesar de medo extremo, dor intensa, exaustão ou outras limitações narrativas.'],
+    ['Manter concentração', 'Ajuda a continuar uma ação que normalmente seria interrompida, como sustentar uma magia sob pressão ou permanecer focado durante distrações intensas.'],
+    ['Resistir ao Quiet', 'Em alguns casos, testes de Força de Vontade são utilizados para evitar ou superar episódios de Quiet causados pelo Paradoxo.'],
+    ['Recuperar o controle', 'Também pode ser usada para recuperar a compostura após efeitos sobrenaturais que alterem emoções, ilusões ou comportamento.']
+  ]
+};
+
+const wikiQuintessenceGuide = {
+  id: 'quintessence',
+  title: 'Quintessência',
+  intro: 'É a energia primordial utilizada pelos magos para alimentar suas magias e realizar feitos extraordinários. Embora muitos efeitos possam ser conjurados sem seu uso, gastar Quintessência torna as magias mais eficientes e ajuda a contornar as limitações impostas pelo Consenso.',
+  recovery: 'É obtida principalmente em Nodos (Nodes), locais de poder, por meio de Tass, a Quintessência cristalizada, de certos efeitos da Esfera Primórdio ou de outras fontes místicas definidas pela Narradora.',
+  uses: [
+    ['Reduzir a dificuldade da magia', 'Gastar 1 ponto pode reduzir a dificuldade do teste de Arcana em 1, até o mínimo permitido pela Narradora ou pelas regras da edição.'],
+    ['Alimentar efeitos poderosos', 'Algumas magias exigem Quintessência para criar matéria, sustentar efeitos duradouros, produzir fenômenos permanentes ou realizar grandes rituais.'],
+    ['Encantar objetos', 'É usada na criação de talismãs, maravilhas e outros itens mágicos permanentes ou semipermanentes.'],
+    ['Canalizar energia', 'Pode ser transferida entre certos receptáculos, como Tass e Nodos, ou utilizada para abastecer outros efeitos mágicos, conforme permitido pela Narradora.'],
+    ['Interagir com Primórdio', 'Muitas magias da Esfera Primórdio utilizam ou manipulam diretamente Quintessência, permitindo armazená-la, detectá-la, transferi-la ou refiná-la.']
+  ]
+};
+
 const wikiTopics = [
   {
     id: 'identity',
@@ -483,13 +516,25 @@ const wikiTopics = [
     casting: wikiSpellcastingGuide
   },
   {
+    id: 'reactions',
+    title: 'Ações Reativas',
+    intro: 'Reações (Reflexes) são ações instantâneas realizadas fora do turno normal de uma personagem em resposta a um evento.',
+    entries: [
+      ['Quando usar', 'Uma reação pode responder a acontecimentos como esquivar de um ataque, bloquear um golpe, sacar uma arma rapidamente ou lançar uma magia defensiva.'],
+      ['Limite', 'Cada personagem pode realizar uma reação por rodada, desde que a situação permita e ela ainda seja capaz de agir. Depois de utilizá-la, só poderá reagir novamente na rodada seguinte.'],
+      ['Resolução', 'A reação é resolvida imediatamente, antes da ação que a desencadeou ser concluída, seguindo as regras específicas da ação realizada, como teste de esquiva, bloqueio ou magia.'],
+      ['Contramágica (Countermagic)', 'É o uso de magia para impedir, enfraquecer ou desfazer o efeito de outra magia. Quando uma personagem percebe um efeito mágico sendo lançado ou já ativo, ela pode reagir realizando um teste de Arcana e utilizando as Esferas apropriadas para compreender e neutralizar o efeito. Cada sucesso obtido reduz 1 sucesso da magia original ou 1 ponto do poder do efeito em vigor. Se a contramágica igualar ou superar esse valor, a magia é anulada ou dissipada; caso contrário, seu efeito pode apenas ser reduzido.']
+    ]
+  },
+  {
     id: 'advantages',
     title: 'Vantagens',
     intro: 'Recursos místicos e internos usados pela personagem.',
     paths: [
       ['advantages.arcana', 'Arcana'], ['advantages.willpower', 'Força de Vontade'],
       ['advantages.quintessence', 'Quintessência'], ['advantages.paradox', 'Paradoxo']
-    ]
+    ],
+    advantageGuides: [wikiWillpowerGuide, wikiQuintessenceGuide]
   },
   {
     id: 'backgrounds',
@@ -517,12 +562,6 @@ const wikiTopics = [
       ['Dispensa', 'Inventário compartilhado com 16 espaços, nomes, descrições e imagens.'],
       ['Edição', 'A edição sincronizada usa um bloqueio temporário de até dez minutos.']
     ]
-  },
-  {
-    id: 'notes',
-    title: 'Anotações',
-    intro: 'Área livre para rotes, grimório, contatos, histórico, equipamentos e outras informações.',
-    entries: []
   },
   {
     id: 'lineage',
@@ -567,6 +606,8 @@ function wikiTopicSearchText(topic) {
   ));
   const combat = topic.combat
     ? [
+        topic.combat.initiative?.title,
+        topic.combat.initiative?.text,
         ...topic.combat.steps.flatMap(step => [
           step.title,
           step.subtitle,
@@ -580,6 +621,7 @@ function wikiTopicSearchText(topic) {
       ]
     : [];
   const casting = topic.casting ? flattenWikiValues(topic.casting) : [];
+  const advantageGuides = topic.advantageGuides ? flattenWikiValues(topic.advantageGuides) : [];
   return [
     topic.title,
     topic.intro,
@@ -588,6 +630,7 @@ function wikiTopicSearchText(topic) {
     ...guides,
     ...combat,
     ...casting,
+    ...advantageGuides,
     ...wikiTopicEntries(topic).flat()
   ].join(' ');
 }
@@ -716,10 +759,43 @@ function renderWikiTopic(topic, query = '') {
   } else {
     appendEntries(wikiTopicEntries(topic));
   }
+  if (topic.advantageGuides?.length) {
+    topic.advantageGuides.forEach(guide => renderWikiAdvantageGuide(content, guide));
+  }
   highlightWikiMatches(content, query);
 }
 
+function renderWikiAdvantageGuide(content, guide) {
+  const section = document.createElement('section');
+  section.className = 'wiki-advantage-guide';
+  section.dataset.wikiAdvantageGuide = guide.id;
+  const heading = document.createElement('h4');
+  heading.className = 'wiki-content-section-title';
+  heading.textContent = guide.title;
+  const intro = document.createElement('p');
+  intro.textContent = guide.intro;
+  const recovery = document.createElement('p');
+  recovery.textContent = guide.recovery;
+  section.append(
+    heading,
+    intro,
+    recovery,
+    createWikiSimpleTable(['Situação', 'Efeito'], guide.uses, 'wiki-advantage-table')
+  );
+  content.append(section);
+}
+
 function renderWikiCombat(content, combat) {
+  if (combat.initiative) {
+    const initiative = document.createElement('section');
+    initiative.className = 'wiki-combat-initiative';
+    const heading = document.createElement('h4');
+    heading.textContent = combat.initiative.title;
+    const paragraph = document.createElement('p');
+    paragraph.textContent = combat.initiative.text;
+    initiative.append(heading, paragraph);
+    content.append(initiative);
+  }
   const flow = document.createElement('ol');
   flow.className = 'wiki-combat-flow';
   combat.steps.forEach(step => {
