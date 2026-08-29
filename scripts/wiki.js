@@ -559,7 +559,9 @@ const wikiTopics = [
     entries: [
       ['Recursos', 'Reúne nome, Fama, Quintessência, Paradoxo e Óbolo dos Mortos do coven.'],
       ['Transferências', 'Duas Quintessências da personagem geram uma no coven; um Paradoxo da personagem gera dois no coven.'],
-      ['Dispensa', 'Inventário compartilhado com 16 espaços, nomes, descrições e imagens.'],
+      ['Dispensa', 'Inventário compartilhado com 16 espaços, nomes, descrições e imagens. Um item também pode ser importado pelo ID do inventário geral: nome, descrição e todas as imagens são copiados para o coven, preservando o ID de origem, mas efeitos de Esfera não são armazenados no coven. Depois da cópia, alterações no inventário e na Dispensa são independentes. Itens podem ser excluídos durante a edição após confirmação.'],
+      ['Usar item do inventário', 'Um item da Dispensa com ID de inventário pode ser usado uma única vez. Antes da confirmação, um resumo mostra todos os efeitos relidos do inventário. Cada Esfera que atender ao próprio nível mínimo recebe os pontos sem ultrapassar o máximo configurado; efeitos sem o requisito são ignorados sem bloquear os demais. Ao confirmar, o item é marcado como usado. O modal de detalhes informa esse estado mesmo no modo somente leitura.'],
+      ['Salvamento da Dispensa', 'Criar, alterar, excluir ou consumir um item salva automaticamente o coven sem liberar o lock. A edição continua disponível até ser concluída ou atingir o limite de dez minutos.'],
       ['Edição', 'A edição sincronizada usa um bloqueio temporário de até dez minutos.']
     ]
   },
@@ -1255,9 +1257,6 @@ function bindWiki() {
   document.getElementById('previousWikiMatchBtn')?.addEventListener('click', () => navigateWikiMatch(-1));
   document.getElementById('nextWikiMatchBtn')?.addEventListener('click', () => navigateWikiMatch(1));
   document.getElementById('clearWikiSearchBtn')?.addEventListener('click', clearWikiSearch);
-  document.getElementById('wikiModal')?.addEventListener('click', event => {
-    if (event.target.id === 'wikiModal') closeWikiModal();
-  });
   document.addEventListener('click', event => {
     const label = event.target.closest('[data-wiki-path], [data-wiki-topic-link]');
     if (!label || isNestedWikiLabelControl(event.target, label)) return;

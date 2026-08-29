@@ -40,21 +40,6 @@
   document.getElementById('rollbackAiPreviewBtn').addEventListener('click', rollbackAiPreview);
   updateAiPreviewActions();
   document.getElementById('githubForm').addEventListener('submit', uploadJsonToGithub);
-  document.getElementById('sheetModal').addEventListener('click', e => {
-    if (e.target.id === 'sheetModal') closeSheetModal();
-  });
-  document.getElementById('backgroundsModal')?.addEventListener('click', e => {
-    if (e.target.id === 'backgroundsModal') closeBackgroundsModal();
-  });
-  document.getElementById('githubModal').addEventListener('click', e => {
-    if (e.target.id === 'githubModal') closeGithubModal();
-  });
-  document.getElementById('aiModal').addEventListener('click', e => {
-    if (e.target.id === 'aiModal') closeAiModal();
-  });
-  document.getElementById('lineageLoadModal')?.addEventListener('click', e => {
-    if (e.target.id === 'lineageLoadModal') closeLineageLoadModal();
-  });
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape') {
       closeSheetModal();
@@ -66,6 +51,8 @@
       closeLineageReviveModal();
       closeCharacterImageRemoveModal();
       closeCovenItemModal();
+      closeCovenItemDeleteModal();
+      closeCovenItemUseModal();
       closeWikiModal();
     }
   });

@@ -133,10 +133,6 @@ async function bindCharacterImageUpload() {
   document.getElementById('closeCharacterImageRemoveModal')?.addEventListener('click', closeCharacterImageRemoveModal);
   document.getElementById('cancelCharacterImageRemoveBtn')?.addEventListener('click', closeCharacterImageRemoveModal);
   document.getElementById('confirmCharacterImageRemoveBtn')?.addEventListener('click', removeCharacterImage);
-  document.getElementById('characterImageRemoveModal')?.addEventListener('click', event => {
-    if (event.target.id === 'characterImageRemoveModal') closeCharacterImageRemoveModal();
-  });
-
   input.addEventListener('change', async () => {
     const file = input.files?.[0];
     if (!file) return;

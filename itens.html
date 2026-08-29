@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Inventário de Itens - Mage: The Ascension</title>
+  <link rel="stylesheet" href="itens.css" />
+</head>
+<body>
+  <main class="inventory-shell">
+    <section id="accessPanel" class="access-panel" aria-labelledby="accessTitle">
+      <p class="kicker">Arquivo restrito</p>
+      <h1 id="accessTitle">Inventário de itens</h1>
+      <p class="intro">Informe a senha para consultar e administrar o inventário.</p>
+      <form id="accessForm" class="access-form">
+        <label for="passwordInput">Senha</label>
+        <div class="password-row">
+          <input id="passwordInput" type="password" autocomplete="current-password" required />
+          <button type="submit">Acessar</button>
+        </div>
+        <p id="accessError" class="form-message error" role="alert" aria-live="polite"></p>
+      </form>
+    </section>
+
+    <section id="inventoryApp" hidden>
+      <header class="inventory-header">
+        <div>
+          <p class="kicker">Arquivo arcano</p>
+          <h1>Inventário de itens</h1>
+        </div>
+        <button id="lockBtn" class="secondary-btn" type="button">Bloquear acesso</button>
+      </header>
+
+      <section class="toolbar" aria-label="Ferramentas do inventário">
+        <label class="search-field" for="itemSearch">
+          <span>Buscar por nome ou descrição</span>
+          <input id="itemSearch" type="search" placeholder="Ex.: poção, grimório..." autocomplete="off" />
+        </label>
+        <button id="newItemBtn" type="button">Cadastrar novo item</button>
+      </section>
+
+      <p id="inventorySummary" class="inventory-summary" aria-live="polite"></p>
+      <div id="itemsGrid" class="items-grid"></div>
+      <p id="emptyInventory" class="empty-state" hidden>Nenhum item cadastrado.</p>
+    </section>
+  </main>
+
+  <dialog id="itemDialog" aria-labelledby="itemDialogTitle">
+    <form id="itemForm" method="dialog">
+      <div class="dialog-header">
+        <h2 id="itemDialogTitle">Cadastrar item</h2>
+        <button id="closeItemDialogBtn" class="icon-btn" type="button" aria-label="Fechar">×</button>
+      </div>
+
+      <input id="itemId" type="hidden" />
+      <div class="form-grid">
+        <label class="full-field" for="itemIdDisplay">ID do item
+          <input id="itemIdDisplay" type="text" placeholder="Gerado automaticamente ao salvar" readonly />
+        </label>
+        <label class="full-field" for="itemName">Nome <strong aria-hidden="true">*</strong>
+          <input id="itemName" type="text" maxlength="120" required />
+        </label>
+        <label class="full-field" for="itemDescription">Descrição (opcional)
+          <textarea id="itemDescription" rows="4" maxlength="2000"></textarea>
+        </label>
+        <label class="full-field" for="itemImage">Imagens (opcional)
+          <input id="itemImage" type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple />
+        </label>
+        <div id="imagePreviewWrap" class="image-preview-wrap full-field" hidden>
+          <div id="imagePreviews" class="image-previews" aria-label="Imagens selecionadas"></div>
+        </div>
+      </div>
+
+      <section class="effects-section" aria-labelledby="effectsTitle">
+        <div class="section-heading">
+          <div>
+            <h3 id="effectsTitle">Efeitos de esfera</h3>
+            <p>Opcional. Adicione uma ou mais esferas afetadas pelo consumo.</p>
+          </div>
+          <button id="addEffectBtn" class="secondary-btn" type="button">Adicionar esfera</button>
+        </div>
+        <div id="effectsList" class="effects-list"></div>
+      </section>
+
+      <p id="itemFormError" class="form-message error" role="alert" aria-live="polite"></p>
+      <div class="dialog-actions">
+        <button id="cancelItemBtn" class="secondary-btn" type="button">Cancelar</button>
+        <button type="submit" value="save">Salvar item</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="githubDialog" aria-labelledby="githubDialogTitle">
+    <form id="githubForm">
+      <div class="dialog-header">
+        <div>
+          <p class="kicker">Sincronização obrigatória</p>
+          <h2 id="githubDialogTitle">Enviar itens.json ao GitHub</h2>
+        </div>
+        <button id="closeGithubDialogBtn" class="icon-btn" type="button" aria-label="Fechar">×</button>
+      </div>
+      <p class="github-explanation">O item só será salvo depois que o arquivo atualizado for enviado com sucesso.</p>
+      <div class="form-grid github-form-grid">
+        <label for="githubUser">Usuário GitHub
+          <input id="githubUser" autocomplete="username" required />
+        </label>
+        <label for="githubPat">PAT
+          <input id="githubPat" type="password" autocomplete="off" required />
+        </label>
+        <label class="full-field" for="githubRepo">Repositório
+          <input id="githubRepo" value="uneluneravie/mage-ascension" placeholder="usuario/repositorio" required />
+        </label>
+        <label for="githubBranch">Branch
+          <input id="githubBranch" value="main" required />
+        </label>
+        <label for="githubFolder">Pasta (opcional)
+          <input id="githubFolder" value="fichas" placeholder="raiz do repositório" />
+        </label>
+      </div>
+      <p class="github-file-hint">Destino: <code id="githubFilePath">itens.json</code></p>
+      <p id="githubStatus" class="form-message" role="status" aria-live="polite"></p>
+      <div class="dialog-actions">
+        <button id="cancelGithubBtn" class="secondary-btn" type="button">Cancelar</button>
+        <button id="githubSubmitBtn" type="submit">Enviar e salvar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <template id="effectRowTemplate">
+    <fieldset class="effect-row">
+      <legend>Efeito de esfera</legend>
+      <label>Esfera
+        <select data-effect-field="sphere" required>
+          <option value="">Selecione</option>
+          <option value="fate">Destino</option>
+          <option value="space">Espaço</option>
+          <option value="spirit">Espírito</option>
+          <option value="forces">Forças</option>
+          <option value="matter">Matéria</option>
+          <option value="mind">Mente</option>
+          <option value="death">Morte</option>
+          <option value="prime">Primórdio</option>
+          <option value="time">Tempo</option>
+          <option value="life">Vida</option>
+        </select>
+      </label>
+      <label>Pontos ganhos
+        <input data-effect-field="points" type="number" min="1" step="1" required />
+      </label>
+      <label>Nível mínimo
+        <input data-effect-field="minLevel" type="number" min="0" max="10" step="1" required />
+      </label>
+      <label>Nível máximo
+        <input data-effect-field="maxLevel" type="number" min="0" max="10" step="1" required />
+      </label>
+      <button class="remove-effect-btn" type="button" aria-label="Remover efeito">Remover</button>
+    </fieldset>
+  </template>
+
+  <script src="scripts/integrations/github.js"></script>
+  <script src="scripts/items-inventory.js"></script>
+</body>
+</html>

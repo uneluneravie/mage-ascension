@@ -26,6 +26,354 @@ function dot(root, path, index) {
   return root.querySelector(`[data-dots="${path}"] .dot:nth-child(${index})`);
 }
 
+async function withItemsPage(fn) {
+  const iframe = document.createElement('iframe');
+  iframe.hidden = true;
+  document.body.appendChild(iframe);
+  await new Promise((resolve, reject) => {
+    iframe.addEventListener('load', resolve, { once: true });
+    iframe.addEventListener('error', reject, { once: true });
+    iframe.src = '../../itens.html';
+  });
+  try {
+    iframe.contentWindow.localStorage.removeItem('mage-ascension-items-v1');
+    iframe.contentWindow.localStorage.removeItem('mage-ascension-items-github-v1');
+    iframe.contentWindow.localStorage.removeItem('mage-ascension-github-settings');
+    return await fn(iframe.contentWindow, iframe.contentDocument);
+  } finally {
+    iframe.contentWindow.localStorage.removeItem('mage-ascension-items-v1');
+    iframe.contentWindow.localStorage.removeItem('mage-ascension-items-github-v1');
+    iframe.contentWindow.localStorage.removeItem('mage-ascension-github-settings');
+    iframe.remove();
+  }
+}
+
+async function completeItemsGitHubUpload(win, doc) {
+  const requests = [];
+  win.fetch = async (url, options = {}) => {
+    requests.push({ url, options });
+    if (url === 'https://api.github.com/user') {
+      return { status: 200, ok: true, text: async () => '{"login":"lari"}' };
+    }
+    if (!options.method) return { status: 404, ok: false, text: async () => '' };
+    return { status: 200, ok: true, text: async () => '{}' };
+  };
+  input(doc.getElementById('githubUser'), 'lari');
+  input(doc.getElementById('githubPat'), 'github_pat_teste');
+  input(doc.getElementById('githubRepo'), 'lari/mage-ascension');
+  input(doc.getElementById('githubBranch'), 'main');
+  doc.getElementById('githubForm').dispatchEvent(new win.Event('submit', { bubbles: true, cancelable: true }));
+  await tick();
+  await tick();
+  return requests;
+}
+
+test('inventario exige a senha configurada e permite bloquear novamente', () => withItemsPage(async (win, doc) => {
+  assert.equal(doc.getElementById('inventoryApp').hidden, true);
+  assert.equal(doc.getElementById('itemImage').multiple, true);
+  const migrated = win.ItemsInventory.sanitizeItem({ id: 'item-legado', name: 'Legado', image: 'data:image/png;base64,AA==' });
+  assert.equal(migrated.images.length, 1);
+  assert(/^LEG\d{5}$/.test(migrated.id));
+  const folder = win.ItemsInventory.createItemImageFolder(migrated);
+  assert.includes(folder, `imagens/itens/legado-${migrated.id}`);
+  input(doc.getElementById('passwordInput'), 'senha errada');
+  doc.getElementById('accessForm').dispatchEvent(new win.Event('submit', { bubbles: true, cancelable: true }));
+  await tick();
+  assert.includes(doc.getElementById('accessError').textContent, 'incorreta');
+
+  input(doc.getElementById('passwordInput'), 'itens123!');
+  doc.getElementById('accessForm').dispatchEvent(new win.Event('submit', { bubbles: true, cancelable: true }));
+  await tick();
+  assert.equal(doc.getElementById('inventoryApp').hidden, false);
+  click(doc.getElementById('lockBtn'));
+  assert.equal(doc.getElementById('accessPanel').hidden, false);
+}));
+
+test('inventario cadastra item com efeito e busca por nome ou descricao sem acento', () => withItemsPage(async (win, doc) => {
+  input(doc.getElementById('passwordInput'), 'itens123!');
+  doc.getElementById('accessForm').dispatchEvent(new win.Event('submit', { bubbles: true, cancelable: true }));
+  await tick();
+  click(doc.getElementById('newItemBtn'));
+  input(doc.getElementById('itemName'), 'Poção lunar');
+  input(doc.getElementById('itemDescription'), 'Essência para rituais');
+  click(doc.getElementById('addEffectBtn'));
+  change(doc.querySelector('[data-effect-field="sphere"]'), 'spirit');
+  input(doc.querySelector('[data-effect-field="points"]'), '2');
+  input(doc.querySelector('[data-effect-field="minLevel"]'), '1');
+  input(doc.querySelector('[data-effect-field="maxLevel"]'), '3');
+  win.localStorage.setItem('mage-ascension-github-settings', JSON.stringify({
+    user: 'personagem-user', repo: 'personagem/repo', branch: 'cronica', sheetsPath: 'fichas'
+  }));
+  doc.getElementById('itemForm').dispatchEvent(new win.Event('submit', { bubbles: true, cancelable: true }));
+  assert.equal(doc.getElementById('githubDialog').open, true);
+  assert.equal(doc.getElementById('githubUser').value, 'personagem-user');
+  assert.equal(doc.getElementById('githubRepo').value, 'personagem/repo');
+  assert.equal(doc.getElementById('githubBranch').value, 'cronica');
+  assert.equal(doc.getElementById('githubFolder').value, 'fichas');
+  assert.equal(doc.querySelectorAll('.item-card').length, 0);
+  const githubRequests = await completeItemsGitHubUpload(win, doc);
+  assert.equal(doc.querySelectorAll('.item-card').length, 1);
+  assert.includes(doc.querySelector('.effect-summary').textContent, 'Espírito');
+  assert(/^ID POC\d{5}$/.test(doc.querySelector('.item-id').textContent));
+  assert(githubRequests.some(request => request.options.method === 'PUT'));
+  const upload = githubRequests.find(request => request.options.method === 'PUT');
+  const binary = win.atob(JSON.parse(upload.options.body).content);
+  const uploadedText = new win.TextDecoder().decode(win.Uint8Array.from(binary, char => char.charCodeAt(0)));
+  const uploadedItems = JSON.parse(uploadedText);
+  assert.equal(uploadedItems[0].name, 'Poção lunar');
+  assert.equal(doc.getElementById('githubPat').value, '');
+
+  click(doc.querySelector('.card-actions button'));
+  input(doc.getElementById('itemDescription'), 'Essência lunar atualizada');
+  doc.getElementById('itemForm').dispatchEvent(new win.Event('submit', { bubbles: true, cancelable: true }));
+  assert.equal(doc.getElementById('githubDialog').open, false);
+  await tick();
+  await tick();
+  const uploads = githubRequests.filter(request => request.options.method === 'PUT');
+  assert.equal(uploads.length, 2);
+  assert.equal(uploads[1].options.headers.Authorization, 'Bearer github_pat_teste');
+  assert.includes(doc.querySelector('.item-description').textContent, 'atualizada');
+
+  input(doc.getElementById('itemSearch'), 'essencia');
+  assert.equal(doc.querySelectorAll('.item-card').length, 1);
+  input(doc.getElementById('itemSearch'), 'grimorio');
+  assert.equal(doc.querySelectorAll('.item-card').length, 0);
+}));
+
+test('inventario rejeita intervalo de esfera invertido', () => withItemsPage(async (win, doc) => {
+  input(doc.getElementById('passwordInput'), 'itens123!');
+  doc.getElementById('accessForm').dispatchEvent(new win.Event('submit', { bubbles: true, cancelable: true }));
+  await tick();
+  click(doc.getElementById('newItemBtn'));
+  input(doc.getElementById('itemName'), 'Item instável');
+  click(doc.getElementById('addEffectBtn'));
+  change(doc.querySelector('[data-effect-field="sphere"]'), 'time');
+  input(doc.querySelector('[data-effect-field="points"]'), '1');
+  input(doc.querySelector('[data-effect-field="minLevel"]'), '4');
+  input(doc.querySelector('[data-effect-field="maxLevel"]'), '2');
+  doc.getElementById('itemForm').dispatchEvent(new win.Event('submit', { bubbles: true, cancelable: true }));
+  assert.includes(doc.getElementById('itemFormError').textContent, 'mínimo');
+  assert.equal(doc.querySelectorAll('.item-card').length, 0);
+}));
+
+test('clique fora dos modais do inventario preserva modal e preenchimento', () => withItemsPage((win, doc) => {
+  click(doc.getElementById('newItemBtn'));
+  input(doc.getElementById('itemName'), 'Rascunho preservado');
+  doc.getElementById('itemDialog').dispatchEvent(new win.MouseEvent('click', { bubbles: true }));
+  assert.equal(doc.getElementById('itemDialog').open, true);
+  assert.equal(doc.getElementById('itemName').value, 'Rascunho preservado');
+
+  click(doc.getElementById('closeItemDialogBtn'));
+  doc.getElementById('githubDialog').showModal();
+  input(doc.getElementById('githubPat'), 'pat-em-preenchimento');
+  doc.getElementById('githubDialog').dispatchEvent(new win.MouseEvent('click', { bubbles: true }));
+  assert.equal(doc.getElementById('githubDialog').open, true);
+  assert.equal(doc.getElementById('githubPat').value, 'pat-em-preenchimento');
+}));
+
+test('inventario envia varias imagens do item para uma pasta exclusiva', () => withItemsPage(async (win, doc) => {
+  input(doc.getElementById('passwordInput'), 'itens123!');
+  doc.getElementById('accessForm').dispatchEvent(new win.Event('submit', { bubbles: true, cancelable: true }));
+  await tick();
+  click(doc.getElementById('newItemBtn'));
+  input(doc.getElementById('itemName'), 'Grimório Lunar');
+  const imageInput = doc.getElementById('itemImage');
+  Object.defineProperty(imageInput, 'files', {
+    configurable: true,
+    value: [
+      new win.File(['frente'], 'frente.png', { type: 'image/png' }),
+      new win.File(['verso'], 'verso.webp', { type: 'image/webp' })
+    ]
+  });
+  imageInput.dispatchEvent(new win.Event('change', { bubbles: true }));
+  await tick();
+  await tick();
+  assert.equal(doc.querySelectorAll('.image-preview-card').length, 2);
+  doc.getElementById('itemForm').dispatchEvent(new win.Event('submit', { bubbles: true, cancelable: true }));
+  const requests = await completeItemsGitHubUpload(win, doc);
+  const puts = requests.filter(request => request.options.method === 'PUT');
+  assert.equal(puts.length, 3);
+  const jsonPut = puts[puts.length - 1];
+  const binary = win.atob(JSON.parse(jsonPut.options.body).content);
+  const jsonText = new win.TextDecoder().decode(win.Uint8Array.from(binary, char => char.charCodeAt(0)));
+  const uploadedItem = JSON.parse(jsonText)[0];
+  assert.equal(uploadedItem.images.length, 2);
+  assert(uploadedItem.images.every(path => path.startsWith(`${uploadedItem.imageFolder}/`)));
+}));
+
+test('dispensa importa item pelo ID sem copiar efeitos de esfera e navega pelas imagens', () => withApp(async (win, doc) => {
+  resetApp(win, { identity: { name: 'Lari' } });
+  win.eval('covenEditMode = true');
+  win.renderCoven();
+  win.fetch = async url => {
+    if (String(url).includes('itens.json')) {
+      return {
+        ok: true,
+        json: async () => [{
+          id: 'GRI12345',
+          name: 'Grimório Lunar',
+          description: 'Um tomo de prata.',
+          images: ['imagens/itens/grimorio/g1.png', 'imagens/itens/grimorio/g2.png'],
+          effects: [{ sphere: 'spirit', points: 3, minLevel: 1, maxLevel: 5 }]
+        }]
+      };
+    }
+    return { ok: true, blob: async () => new win.Blob(['imagem'], { type: 'image/png' }) };
+  };
+  click(doc.querySelector('[data-coven-pantry-slot="0"]'));
+  input(doc.getElementById('covenInventoryItemId'), 'gri12345');
+  click(doc.getElementById('importCovenInventoryItemBtn'));
+  await tick();
+  await tick();
+  await tick();
+  assert.equal(doc.getElementById('covenItemName').value, 'Grimório Lunar');
+  assert.equal(doc.getElementById('covenItemDescription').value, 'Um tomo de prata.');
+  assert.equal(doc.getElementById('covenInventoryItemReference').textContent, 'ID do inventário: GRI12345');
+  assert.equal(doc.getElementById('previousCovenItemImageBtn').hidden, false);
+  assert.equal(doc.getElementById('nextCovenItemImageBtn').hidden, false);
+  assert.equal(doc.getElementById('covenItemImageCounter').textContent, '1 de 2');
+  click(doc.getElementById('nextCovenItemImageBtn'));
+  assert.equal(doc.getElementById('covenItemImageCounter').textContent, '2 de 2');
+  doc.getElementById('covenItemForm').dispatchEvent(new win.Event('submit', { bubbles: true, cancelable: true }));
+  const stored = win.eval('covenState.pantry[0]');
+  assert.equal(stored.inventoryId, 'GRI12345');
+  assert.equal(stored.images.length, 2);
+  assert.equal(stored.effects, undefined);
+
+  win.setPath(appState(win), 'spheres.spirit', 1);
+  click(doc.querySelector('[data-coven-pantry-slot="0"]'));
+  assert.equal(doc.getElementById('covenItemUseActions').hidden, false);
+  click(doc.getElementById('useCovenInventoryItemBtn'));
+  await tick();
+  await tick();
+  assert.equal(doc.getElementById('covenItemUseModal').hidden, false);
+  assert.includes(doc.getElementById('covenItemUseEffects').textContent, 'Espírito: 1 + 3 → 4');
+  assert.equal(win.getPath(appState(win), 'spheres.spirit'), 1);
+  click(doc.getElementById('confirmCovenItemUseBtn'));
+  assert.equal(win.getPath(appState(win), 'spheres.spirit'), 4);
+  assert.equal(stored.used, true);
+  assert.equal(doc.getElementById('covenItemUseActions').hidden, true);
+  assert.equal(doc.getElementById('covenItemUsedStatus').textContent, 'Item já usado');
+  assert.equal(doc.getElementById('covenItemUsedStatus').hidden, false);
+  click(doc.getElementById('useCovenInventoryItemBtn'));
+  assert.equal(win.getPath(appState(win), 'spheres.spirit'), 4);
+}));
+
+test('uso de item do coven aplica efeitos elegiveis e ignora minimo nao atendido', () => withApp(async (win, doc) => {
+  resetApp(win, { spheres: { spirit: 0, time: 2 } });
+  win.eval(`covenState.pantry[0] = ${JSON.stringify({
+    id: 'interno-1', inventoryId: 'MIX12345', used: false, name: 'Elixir misto', description: '', image: '', images: []
+  })}`);
+  win.eval('covenEditMode = true');
+  win.renderCoven();
+  win.fetch = async () => ({
+    ok: true,
+    json: async () => [{
+      id: 'MIX12345',
+      effects: [
+        { sphere: 'spirit', points: 2, minLevel: 1, maxLevel: 4 },
+        { sphere: 'time', points: 2, minLevel: 2, maxLevel: 3 }
+      ]
+    }]
+  });
+  click(doc.querySelector('[data-coven-pantry-slot="0"]'));
+  click(doc.getElementById('useCovenInventoryItemBtn'));
+  await tick();
+  assert.equal(doc.querySelectorAll('.coven-item-use-effect').length, 2);
+  assert.equal(doc.querySelectorAll('.coven-item-use-effect.is-unavailable').length, 1);
+  assert.includes(doc.getElementById('covenItemUseEffects').textContent, 'Espírito: não aplicado');
+  assert.includes(doc.getElementById('covenItemUseEffects').textContent, 'Tempo: 2 + 2 → 3');
+  click(doc.getElementById('confirmCovenItemUseBtn'));
+  assert.equal(win.getPath(appState(win), 'spheres.spirit'), 0);
+  assert.equal(win.getPath(appState(win), 'spheres.time'), 3);
+  assert.equal(win.eval('covenState.pantry[0].used'), true);
+}));
+
+test('item da dispensa exige confirmacao antes da exclusao', () => withApp((win, doc) => {
+  resetApp(win);
+  win.eval(`covenState.pantry[0] = ${JSON.stringify({
+    id: 'interno-2', inventoryId: '', used: false, name: 'Vela', description: '', image: '', images: []
+  })}`);
+  win.eval('covenEditMode = true');
+  win.renderCoven();
+  click(doc.querySelector('[data-coven-pantry-slot="0"]'));
+  click(doc.getElementById('deleteCovenItemBtn'));
+  assert.equal(doc.getElementById('covenItemDeleteModal').hidden, false);
+  click(doc.getElementById('cancelCovenItemDeleteBtn'));
+  assert(win.eval('covenState.pantry[0]'));
+  click(doc.getElementById('deleteCovenItemBtn'));
+  click(doc.getElementById('confirmCovenItemDeleteBtn'));
+  assert.equal(win.eval('covenState.pantry[0]'), null);
+  assert.equal(doc.getElementById('covenItemModal').hidden, true);
+}));
+
+test('autosave da dispensa preserva lock e mantem edicao ativa', () => withApp(async (win) => {
+  resetApp(win);
+  const sessionId = win.eval('covenEditorSessionId');
+  const lock = {
+    owner: 'lari',
+    sessionId,
+    acquiredAt: new Date().toISOString(),
+    expiresAt: new Date(Date.now() + 5 * 60 * 1000).toISOString()
+  };
+  win.eval(`autosaveAuth = ${JSON.stringify({ user: 'lari', token: 'pat', repo: 'lari/repo', branch: 'main', sheetsPath: 'fichas' })}`);
+  win.eval('covenEditMode = true');
+  win.eval(`Object.assign(covenState, ${JSON.stringify({
+    name: 'Circulo', quintessence: 0, paradox: 0, obolOfTheDead: 0, fame: 0, lab: '',
+    pantry: [{ id: 'interno', name: 'Vela', description: '', image: '', images: [], inventoryId: '', used: false }, ...Array(15).fill(null)],
+    lock
+  })})`);
+  let uploadedBody = null;
+  win.fetch = async (_url, options = {}) => {
+    if (!options.method) {
+      return {
+        status: 200,
+        ok: true,
+        text: async () => JSON.stringify({ sha: 'sha-coven', content: win.btoa(JSON.stringify(win.eval('covenState'))) })
+      };
+    }
+    uploadedBody = JSON.parse(options.body);
+    return { status: 200, ok: true, text: async () => '{}' };
+  };
+  await win.queueCovenProgressSave('Teste da Dispensa');
+  const uploaded = JSON.parse(win.atob(uploadedBody.content));
+  assert.equal(uploaded.lock.sessionId, sessionId);
+  assert.equal(uploaded.lock.expiresAt, lock.expiresAt);
+  assert.equal(uploaded.pantry[0].name, 'Vela');
+  assert.equal(win.eval('covenEditMode'), true);
+}));
+
+test('normalizacao do coven preserva imagem unica legada e ID de inventario valido', () => withApp((win) => {
+  const normalized = win.normalizeCovenData({
+    pantry: [{ id: 'interno', inventoryId: 'ABC12345', name: 'Legado', image: 'imagens/coven/legado.png' }]
+  });
+  assert.equal(normalized.pantry[0].inventoryId, 'ABC12345');
+  assert.deepEqual(normalized.pantry[0].images, ['imagens/coven/legado.png']);
+  assert.equal(normalized.pantry[0].image, 'imagens/coven/legado.png');
+}));
+
+test('modal da dispensa mostra item usado mesmo sem lock de edicao', () => withApp((win, doc) => {
+  resetApp(win);
+  win.eval(`covenState.pantry[0] = ${JSON.stringify({
+    id: 'interno-usado', inventoryId: 'USO12345', used: true, name: 'Elixir usado', description: '', image: '', images: []
+  })}`);
+  win.eval('covenEditMode = false');
+  win.renderCoven();
+  click(doc.querySelector('[data-coven-pantry-slot="0"]'));
+  assert.equal(doc.getElementById('covenItemUsedStatus').hidden, false);
+  assert.equal(doc.getElementById('covenItemUsedStatus').textContent, 'Item já usado');
+  assert.equal(doc.getElementById('covenItemUseActions').hidden, true);
+}));
+
+test('wiki do coven explica importacao independente por ID', () => withApp((win, doc) => {
+  click(doc.getElementById('openWikiBtn'));
+  click(doc.querySelector('[data-wiki-topic="coven"]'));
+  const content = doc.getElementById('wikiTopicContent').textContent;
+  assert.includes(content, 'importado pelo ID');
+  assert.includes(content, 'efeitos de Esfera não são armazenados');
+  assert.includes(content, 'são independentes');
+}));
+
 test('inicializacao renderiza controles principais', () => withApp((win, doc) => {
   assert.equal(doc.querySelectorAll('[data-dots]').length, 77);
   assert.equal(doc.querySelectorAll('[data-dots] .dot').length, 395);
@@ -723,6 +1071,20 @@ test('Escape fecha modais abertos', () => withApp((win, doc) => {
   assert.equal(doc.getElementById('githubModal').hidden, true);
   assert.equal(doc.getElementById('aiModal').hidden, true);
   assert.equal(doc.getElementById('backgroundsModal').hidden, true);
+}));
+
+test('clique no backdrop nao fecha nenhum modal da ficha', () => withApp((win, doc) => {
+  const modalIds = [
+    'backgroundsModal', 'sheetModal', 'startModal', 'githubModal', 'lineageLoadModal', 'aiModal',
+    'characterImageRemoveModal', 'covenItemModal', 'covenItemDeleteModal', 'covenItemUseModal', 'lineageDeathModal', 'lineageReviveModal', 'wikiModal'
+  ];
+  modalIds.forEach(id => {
+    const modal = doc.getElementById(id);
+    modal.hidden = false;
+    modal.dispatchEvent(new win.MouseEvent('click', { bubbles: true }));
+    assert.equal(modal.hidden, false, `${id} não deve fechar por clique no backdrop`);
+    modal.hidden = true;
+  });
 }));
 
 test('marcar morte de membro absorve XP da ficha mockada', async () => withApp(async (win, doc) => {

@@ -305,18 +305,77 @@ function covenItemModalTemplate() {
       </button>
     </header>
     <form id="covenItemForm" class="coven-item-form">
-      <label class="coven-item-image-picker" id="covenItemImagePicker" tabindex="0">
-        <img id="covenItemImagePreview" alt="Imagem do item" hidden />
-        <span id="covenItemImagePlaceholder">Selecionar imagem quadrada</span>
-        <input id="covenItemImageInput" type="file" accept="image/*" />
-      </label>
+      <div class="coven-inventory-import" id="covenInventoryImport">
+        <label>ID do inventário<input id="covenInventoryItemId" maxlength="8" placeholder="ABC12345" pattern="[A-Za-z]{3}[0-9]{5}" /></label>
+        <button id="importCovenInventoryItemBtn" type="button">Buscar item</button>
+      </div>
+      <p id="covenInventoryItemReference" class="coven-inventory-reference" hidden></p>
+      <p id="covenItemUsedStatus" class="coven-item-used-status" hidden></p>
+      <div class="coven-item-image-stage">
+        <button id="previousCovenItemImageBtn" class="coven-item-image-nav" type="button" aria-label="Imagem anterior" hidden>‹</button>
+        <label class="coven-item-image-picker" id="covenItemImagePicker" tabindex="0">
+          <img id="covenItemImagePreview" alt="Imagem do item" hidden />
+          <span id="covenItemImagePlaceholder">Selecionar imagem quadrada</span>
+          <input id="covenItemImageInput" type="file" accept="image/*" />
+        </label>
+        <button id="nextCovenItemImageBtn" class="coven-item-image-nav" type="button" aria-label="Próxima imagem" hidden>›</button>
+      </div>
+      <p id="covenItemImageCounter" class="coven-item-image-counter" hidden></p>
       <label>Nome<input id="covenItemName" maxlength="80" required /></label>
       <label>Descrição<textarea id="covenItemDescription" rows="5"></textarea></label>
       <p id="covenItemModalStatus" class="modal-status" role="status"></p>
       <div class="ai-actions" id="covenItemEditActions">
         <button id="saveCovenItemBtn" type="submit">Salvar item</button>
+        <button id="deleteCovenItemBtn" class="icon-btn danger-action" type="button" aria-label="Excluir item" title="Excluir item">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16"></path><path d="M9 7V4h6v3"></path><path d="m6 7 1 13h10l1-13"></path><path d="M10 11v5M14 11v5"></path></svg>
+        </button>
+      </div>
+      <div class="ai-actions" id="covenItemUseActions" hidden>
+        <button id="useCovenInventoryItemBtn" type="button">Usar item</button>
       </div>
     </form>
+  </div>
+</div>
+  `;
+}
+
+function covenItemDeleteModalTemplate() {
+  return `
+<div class="modal-backdrop no-print" id="covenItemDeleteModal" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="covenItemDeleteModalTitle">
+    <header class="modal-header">
+      <h2 id="covenItemDeleteModalTitle">Excluir item da dispensa</h2>
+      <button id="closeCovenItemDeleteModal" class="icon-btn modal-close" type="button" aria-label="Fechar" title="Fechar">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
+      </button>
+    </header>
+    <p id="covenItemDeleteMessage" class="modal-status">Deseja excluir este item?</p>
+    <div class="ai-actions">
+      <button id="confirmCovenItemDeleteBtn" class="danger-action" type="button">Excluir item</button>
+      <button id="cancelCovenItemDeleteBtn" type="button">Cancelar</button>
+    </div>
+  </div>
+</div>
+  `;
+}
+
+function covenItemUseModalTemplate() {
+  return `
+<div class="modal-backdrop no-print" id="covenItemUseModal" hidden>
+  <div class="modal coven-item-use-modal" role="dialog" aria-modal="true" aria-labelledby="covenItemUseModalTitle">
+    <header class="modal-header">
+      <h2 id="covenItemUseModalTitle">Confirmar uso do item</h2>
+      <button id="closeCovenItemUseModal" class="icon-btn modal-close" type="button" aria-label="Fechar" title="Fechar">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
+      </button>
+    </header>
+    <p id="covenItemUseSummary" class="modal-status"></p>
+    <div id="covenItemUseEffects" class="coven-item-use-effects"></div>
+    <p class="modal-status">Ao confirmar, o item será marcado como usado mesmo que algum efeito não cumpra o nível mínimo.</p>
+    <div class="ai-actions">
+      <button id="confirmCovenItemUseBtn" type="button">Confirmar uso</button>
+      <button id="cancelCovenItemUseBtn" type="button">Cancelar</button>
+    </div>
   </div>
 </div>
   `;

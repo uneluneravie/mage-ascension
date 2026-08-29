@@ -470,15 +470,9 @@ function bindLineage() {
   document.getElementById('closeLineageDeathModal')?.addEventListener('click', closeLineageDeathModal);
   document.getElementById('cancelLineageDeathBtn')?.addEventListener('click', closeLineageDeathModal);
   document.getElementById('confirmLineageDeathBtn')?.addEventListener('click', confirmLineageDeath);
-  document.getElementById('lineageDeathModal')?.addEventListener('click', event => {
-    if (event.target.id === 'lineageDeathModal') closeLineageDeathModal();
-  });
   document.getElementById('closeLineageReviveModal')?.addEventListener('click', closeLineageReviveModal);
   document.getElementById('cancelLineageReviveBtn')?.addEventListener('click', closeLineageReviveModal);
   document.getElementById('confirmLineageReviveBtn')?.addEventListener('click', confirmLineageRevive);
-  document.getElementById('lineageReviveModal')?.addEventListener('click', event => {
-    if (event.target.id === 'lineageReviveModal') closeLineageReviveModal();
-  });
   renderLineage();
 }
 

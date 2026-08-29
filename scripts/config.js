@@ -225,3 +225,6 @@ let covenLockTimer = null;
 const pendingCovenItemImages = {};
 let activeCovenPantrySlot = null;
 let activeCovenItemImageDraft = null;
+let activeCovenItemImageIndex = 0;
+let pendingCovenItemUsePreview = null;
+let covenProgressSaveQueue = Promise.resolve();

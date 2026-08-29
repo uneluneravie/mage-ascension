@@ -29,6 +29,8 @@ function appShellTemplate() {
   ${aiModalTemplate()}
   ${characterImageRemoveModalTemplate()}
   ${covenItemModalTemplate()}
+  ${covenItemDeleteModalTemplate()}
+  ${covenItemUseModalTemplate()}
   ${lineageDeathModalTemplate()}
   ${lineageReviveModalTemplate()}
   `;

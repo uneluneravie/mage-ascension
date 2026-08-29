@@ -2,11 +2,19 @@ function normalizeCovenData(data = {}) {
   const pantry = Array.from({ length: 16 }, (_, slot) => {
     const item = Array.isArray(data.pantry) ? data.pantry[slot] : null;
     if (!item || typeof item !== 'object') return null;
+    const images = Array.isArray(item.images)
+      ? item.images.map(String).filter(Boolean)
+      : item.image ? [String(item.image)] : [];
     return {
       id: String(item.id || `item-${slot + 1}`),
+      inventoryId: /^[A-Z]{3}\d{5}$/.test(String(item.inventoryId || '').toUpperCase())
+        ? String(item.inventoryId).toUpperCase()
+        : '',
+      used: Boolean(item.used),
       name: String(item.name || ''),
       description: String(item.description || ''),
-      image: String(item.image || '')
+      image: images[0] || '',
+      images
     };
   });
   return {
@@ -21,12 +29,22 @@ function normalizeCovenData(data = {}) {
   };
 }
 
-function covenItemImageSource(item) {
+function covenItemImages(item) {
+  if (!item) return [];
+  if (activeCovenItemImageDraft?.id === item.id && Array.isArray(activeCovenItemImageDraft.images)) {
+    return activeCovenItemImageDraft.images;
+  }
+  return Array.isArray(item.images) && item.images.length ? item.images : item.image ? [item.image] : [];
+}
+
+function covenItemImageSource(item, index = 0) {
   if (!item) return '';
-  if (pendingCovenItemImages[item.id]?.dataUrl) return pendingCovenItemImages[item.id].dataUrl;
-  if (!item.image) return '';
+  const pending = pendingCovenItemImages[item.id]?.images?.[index];
+  if (pending?.dataUrl) return pending.dataUrl;
+  const image = covenItemImages(item)[index];
+  if (!image) return '';
   const baseUrl = githubLoadedSheetSource?.sheetsBaseUrl || currentSheetAssetBaseUrl || 'fichas';
-  return assetUrl(baseUrl, item.image);
+  return assetUrl(baseUrl, image);
 }
 
 function renderCovenPantry() {
@@ -147,11 +165,21 @@ function setCovenItemModalStatus(message = '', isError = false) {
 function renderCovenItemModalImage(item) {
   const preview = document.getElementById('covenItemImagePreview');
   const placeholder = document.getElementById('covenItemImagePlaceholder');
-  const source = covenItemImageSource(item);
+  const images = covenItemImages(item);
+  if (activeCovenItemImageIndex >= images.length) activeCovenItemImageIndex = Math.max(0, images.length - 1);
+  const source = covenItemImageSource(item, activeCovenItemImageIndex);
+  const hasMultiple = images.length > 1;
+  const previous = document.getElementById('previousCovenItemImageBtn');
+  const next = document.getElementById('nextCovenItemImageBtn');
+  const counter = document.getElementById('covenItemImageCounter');
   preview.hidden = !source;
   placeholder.hidden = Boolean(source);
   if (source) preview.src = source;
   else preview.removeAttribute('src');
+  previous.hidden = !hasMultiple;
+  next.hidden = !hasMultiple;
+  counter.hidden = !hasMultiple;
+  if (hasMultiple) counter.textContent = `${activeCovenItemImageIndex + 1} de ${images.length}`;
 }
 
 function openCovenItemModal(slot) {
@@ -159,15 +187,29 @@ function openCovenItemModal(slot) {
   if (!item && !covenEditMode) return;
   activeCovenPantrySlot = slot;
   activeCovenItemImageDraft = null;
+  activeCovenItemImageIndex = 0;
   const editable = covenEditMode;
   document.getElementById('covenItemModalTitle').textContent = item ? item.name || 'Item da dispensa' : 'Adicionar item à dispensa';
   document.getElementById('covenItemName').value = item?.name || '';
   document.getElementById('covenItemDescription').value = item?.description || '';
+  document.getElementById('covenInventoryItemId').value = '';
+  document.getElementById('covenInventoryItemId').disabled = !editable;
+  document.getElementById('importCovenInventoryItemBtn').disabled = !editable;
+  document.getElementById('covenInventoryImport').hidden = !editable;
+  const reference = document.getElementById('covenInventoryItemReference');
+  reference.hidden = !item?.inventoryId;
+  reference.textContent = item?.inventoryId ? `ID do inventário: ${item.inventoryId}` : '';
+  const usedStatus = document.getElementById('covenItemUsedStatus');
+  usedStatus.hidden = !item?.inventoryId;
+  usedStatus.classList.toggle('is-used', Boolean(item?.used));
+  usedStatus.textContent = item?.used ? 'Item já usado' : 'Disponível para uso';
   document.getElementById('covenItemName').disabled = !editable;
   document.getElementById('covenItemDescription').disabled = !editable;
   document.getElementById('covenItemImageInput').disabled = !editable;
   document.getElementById('covenItemImagePicker').classList.toggle('is-readonly', !editable);
   document.getElementById('covenItemEditActions').hidden = !editable;
+  document.getElementById('deleteCovenItemBtn').hidden = !editable || !item;
+  document.getElementById('covenItemUseActions').hidden = !editable || !item?.inventoryId || item.used;
   document.getElementById('covenItemImageInput').value = '';
   setCovenItemModalStatus('');
   renderCovenItemModalImage(item);
@@ -178,6 +220,7 @@ function closeCovenItemModal() {
   if (activeCovenItemImageDraft) delete pendingCovenItemImages[activeCovenItemImageDraft.id];
   activeCovenPantrySlot = null;
   activeCovenItemImageDraft = null;
+  activeCovenItemImageIndex = 0;
   document.getElementById('covenItemModal').hidden = true;
 }
 
@@ -187,6 +230,255 @@ function covenItemId(slot) {
 
 function covenItemImagePath(itemId, extension = 'png') {
   return `imagens/coven/${snakeCase(itemId)}.${extension}`;
+}
+
+function covenItemImagePaths(itemId, images) {
+  return images.map((image, index) => {
+    const extension = image.extension || imageExtensionFromMime(dataUrlMime(image.dataUrl));
+    return `imagens/coven/${snakeCase(itemId)}-${index + 1}.${extension}`;
+  });
+}
+
+function inventoryRootBaseUrl() {
+  const sheetsBaseUrl = githubLoadedSheetSource?.sheetsBaseUrl;
+  if (sheetsBaseUrl) return sheetsBaseUrl.replace(/\/[^/]+\/?$/, '');
+  if (/^https?:/i.test(currentSheetAssetBaseUrl)) return currentSheetAssetBaseUrl.replace(/\/[^/]+\/?$/, '');
+  return githubRawBase;
+}
+
+async function fetchInventoryCatalog() {
+  if (autosaveAuth) {
+    const apiPaths = [joinGitHubPath(autosaveAuth.sheetsPath, 'itens.json'), 'itens.json'];
+    for (const path of [...new Set(apiPaths)]) {
+      const file = await getGitHubFile(autosaveAuth.repo, autosaveAuth.branch, path, autosaveAuth.token);
+      if (file?.content) {
+        const inventoryPath = path.includes('/') ? path.slice(0, path.lastIndexOf('/')) : '';
+        return {
+          items: JSON.parse(base64ToText(file.content)),
+          auth: { ...autosaveAuth, inventoryPath },
+          baseUrl: ''
+        };
+      }
+    }
+  }
+  const bases = [
+    githubLoadedSheetSource?.sheetsBaseUrl,
+    inventoryRootBaseUrl(),
+    `${githubRawBase}/fichas`,
+    githubRawBase
+  ].filter(Boolean);
+  for (const baseUrl of [...new Set(bases)]) {
+    const response = await fetch(githubRawFileUrl(baseUrl, 'itens.json'), { cache: 'no-store' });
+    if (response.ok) return { items: await response.json(), auth: null, baseUrl };
+  }
+  throw new Error('Não foi possível carregar itens.json.');
+}
+
+function imageMimeFromPath(path) {
+  const extension = String(path).split('.').pop()?.toLowerCase();
+  return { jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp', gif: 'image/gif' }[extension] || 'image/png';
+}
+
+function blobToDataUrl(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.addEventListener('load', () => resolve(String(reader.result || '')));
+    reader.addEventListener('error', () => reject(reader.error));
+    reader.readAsDataURL(blob);
+  });
+}
+
+async function fetchInventoryImage(path, source) {
+  if (source.auth) {
+    const imagePath = joinGitHubPath(source.auth.inventoryPath, path);
+    const file = await getGitHubFile(source.auth.repo, source.auth.branch, imagePath, source.auth.token);
+    if (!file?.content) throw new Error(`Imagem não encontrada: ${path}`);
+    return `data:${imageMimeFromPath(path)};base64,${file.content.replace(/\n/g, '')}`;
+  }
+  const response = await fetch(assetUrl(source.baseUrl, path), { cache: 'no-store' });
+  if (!response.ok) throw new Error(`Imagem não encontrada: ${path}`);
+  return blobToDataUrl(await response.blob());
+}
+
+async function importInventoryItem() {
+  if (!covenEditMode || activeCovenPantrySlot === null) return;
+  const input = document.getElementById('covenInventoryItemId');
+  const inventoryId = input.value.trim().toUpperCase();
+  if (!/^[A-Z]{3}\d{5}$/.test(inventoryId)) {
+    setCovenItemModalStatus('Informe um ID no formato ABC12345.', true);
+    return;
+  }
+  const button = document.getElementById('importCovenInventoryItemBtn');
+  button.disabled = true;
+  setCovenItemModalStatus(`Buscando ${inventoryId} no inventário...`);
+  try {
+    const source = await fetchInventoryCatalog();
+    const inventory = Array.isArray(source.items) ? source.items : [];
+    const found = inventory.find(item => String(item?.id || '').toUpperCase() === inventoryId);
+    if (!found) throw new Error(`Nenhum item encontrado com o ID ${inventoryId}.`);
+    const sourcePaths = Array.isArray(found.images) ? found.images.map(String).filter(Boolean) : [];
+    const downloaded = await Promise.all(sourcePaths.map(path => fetchInventoryImage(path, source)));
+    const id = covenItemId(activeCovenPantrySlot);
+    const pendingImages = downloaded.map((dataUrl, index) => ({
+      dataUrl,
+      extension: imageExtensionFromMime(dataUrlMime(dataUrl)),
+      sourcePath: sourcePaths[index]
+    }));
+    const paths = covenItemImagePaths(id, pendingImages);
+    pendingCovenItemImages[id] = { images: pendingImages };
+    activeCovenItemImageDraft = {
+      id,
+      inventoryId,
+      image: paths[0] || '',
+      images: paths
+    };
+    activeCovenItemImageIndex = 0;
+    document.getElementById('covenItemName').value = String(found.name || '');
+    document.getElementById('covenItemDescription').value = String(found.description || '');
+    const reference = document.getElementById('covenInventoryItemReference');
+    reference.hidden = false;
+    reference.textContent = `ID do inventário: ${inventoryId}`;
+    const usedStatus = document.getElementById('covenItemUsedStatus');
+    usedStatus.hidden = false;
+    usedStatus.classList.remove('is-used');
+    usedStatus.textContent = 'Disponível para uso';
+    renderCovenItemModalImage({ ...found, ...activeCovenItemImageDraft });
+    setCovenItemModalStatus(`Item ${inventoryId} importado. Salve o item e depois conclua a edição do coven.`);
+  } catch (error) {
+    setCovenItemModalStatus(error.message || 'Não foi possível importar o item.', true);
+  } finally {
+    button.disabled = false;
+  }
+}
+
+function navigateCovenItemImage(direction) {
+  if (activeCovenPantrySlot === null) return;
+  const item = covenState.pantry[activeCovenPantrySlot] || activeCovenItemImageDraft;
+  const images = covenItemImages(item);
+  if (images.length < 2) return;
+  activeCovenItemImageIndex = (activeCovenItemImageIndex + direction + images.length) % images.length;
+  renderCovenItemModalImage(item);
+}
+
+function openCovenItemDeleteModal() {
+  if (!covenEditMode || activeCovenPantrySlot === null) return;
+  const item = covenState.pantry[activeCovenPantrySlot];
+  if (!item) return;
+  document.getElementById('covenItemDeleteMessage').textContent = `Excluir “${item.name}” da dispensa? A exclusão será salva automaticamente sem liberar o lock.`;
+  document.getElementById('covenItemDeleteModal').hidden = false;
+}
+
+function closeCovenItemDeleteModal() {
+  document.getElementById('covenItemDeleteModal').hidden = true;
+}
+
+function confirmCovenItemDelete() {
+  if (!covenEditMode || activeCovenPantrySlot === null) return closeCovenItemDeleteModal();
+  const item = covenState.pantry[activeCovenPantrySlot];
+  if (item) delete pendingCovenItemImages[item.id];
+  covenState.pantry[activeCovenPantrySlot] = null;
+  closeCovenItemDeleteModal();
+  closeCovenItemModal();
+  renderCovenPantry();
+  queueCovenProgressSave('Exclusão de item da dispensa');
+}
+
+function inventoryEffectPath(effect) {
+  const path = `spheres.${String(effect?.sphere || '')}`;
+  return spherePaths.includes(path) ? path : '';
+}
+
+function sphereDisplayName(path) {
+  return document.querySelector(`[data-dots="${path}"]`)?.dataset.label || path.split('.')[1];
+}
+
+async function useCovenInventoryItem() {
+  if (!covenEditMode || activeCovenPantrySlot === null) return;
+  const item = covenState.pantry[activeCovenPantrySlot];
+  if (!item?.inventoryId || item.used) return;
+  const button = document.getElementById('useCovenInventoryItemBtn');
+  button.disabled = true;
+  setCovenItemModalStatus(`Buscando efeitos de ${item.inventoryId}...`);
+  try {
+    const source = await fetchInventoryCatalog();
+    const inventory = Array.isArray(source.items) ? source.items : [];
+    const found = inventory.find(candidate => String(candidate?.id || '').toUpperCase() === item.inventoryId);
+    if (!found) throw new Error(`Nenhum item encontrado com o ID ${item.inventoryId}.`);
+    const effects = Array.isArray(found.effects)
+      ? found.effects.map(effect => ({
+        path: inventoryEffectPath(effect),
+        points: Math.max(0, Number(effect.points) || 0),
+        minLevel: Math.max(0, Number(effect.minLevel) || 0),
+        maxLevel: Math.max(0, Number(effect.maxLevel) || 0)
+      })).filter(effect => effect.path && effect.points > 0)
+      : [];
+    if (!effects.length) throw new Error('Este item não possui efeitos de Esfera configurados.');
+    const previewEffects = effects.map(effect => {
+      const current = Math.max(0, Number(getPath(state, effect.path, 0)) || 0);
+      const target = Math.max(current, Math.min(effect.maxLevel, current + effect.points));
+      return {
+        ...effect,
+        name: sphereDisplayName(effect.path),
+        current,
+        target,
+        eligible: current >= effect.minLevel
+      };
+    });
+    pendingCovenItemUsePreview = { itemId: item.id, effects: previewEffects };
+    document.getElementById('covenItemUseSummary').textContent = `Efeitos de “${item.name}” (${item.inventoryId})`;
+    document.getElementById('covenItemUseEffects').replaceChildren(...previewEffects.map(effect => {
+      const row = document.createElement('div');
+      row.className = `coven-item-use-effect${effect.eligible ? '' : ' is-unavailable'}`;
+      row.textContent = effect.eligible
+        ? `${effect.name}: ${effect.current} + ${effect.points} → ${effect.target} (máximo ${effect.maxLevel})`
+        : `${effect.name}: não aplicado — nível atual ${effect.current}, mínimo exigido ${effect.minLevel}`;
+      return row;
+    }));
+    document.getElementById('covenItemUseModal').hidden = false;
+    setCovenItemModalStatus('Revise os efeitos antes de confirmar o uso.');
+  } catch (error) {
+    setCovenItemModalStatus(error.message || 'Não foi possível preparar o uso do item.', true);
+  } finally {
+    button.disabled = false;
+  }
+}
+
+function closeCovenItemUseModal() {
+  pendingCovenItemUsePreview = null;
+  document.getElementById('covenItemUseModal').hidden = true;
+}
+
+function confirmCovenItemUse() {
+  if (!covenEditMode || activeCovenPantrySlot === null || !pendingCovenItemUsePreview) {
+    closeCovenItemUseModal();
+    return;
+  }
+  const item = covenState.pantry[activeCovenPantrySlot];
+  if (!item || item.id !== pendingCovenItemUsePreview.itemId || item.used) {
+    closeCovenItemUseModal();
+    return;
+  }
+  const eligible = pendingCovenItemUsePreview.effects.filter(effect => effect.eligible);
+  eligible.forEach(effect => setPath(state, effect.path, effect.target));
+  item.used = true;
+  eligible.forEach(effect => {
+    const container = document.querySelector(`[data-dots="${effect.path}"]`);
+    if (container) renderDots(container);
+  });
+  renderCreationSummary();
+  updateAllDotCosts();
+  updateLineageSphereBonusButton();
+  document.getElementById('covenItemUseActions').hidden = true;
+  const usedStatus = document.getElementById('covenItemUsedStatus');
+  usedStatus.hidden = false;
+  usedStatus.classList.add('is-used');
+  usedStatus.textContent = 'Item já usado';
+  const applied = eligible.map(effect => `${effect.name} ${effect.current}→${effect.target}`);
+  closeCovenItemUseModal();
+  setCovenItemModalStatus(applied.length
+    ? `Item usado: ${applied.join('; ')}. A marca de uso será salva automaticamente.`
+    : 'Item usado sem efeitos aplicáveis. A marca de uso será salva automaticamente.');
+  queueCovenProgressSave(`Consumo do item ${item.name}`);
 }
 
 async function handleCovenItemImage(file) {
@@ -199,9 +491,12 @@ async function handleCovenItemImage(file) {
     const dataUrl = await cropImageFileToSquareDataUrl(file);
     const id = covenItemId(activeCovenPantrySlot);
     const extension = imageExtensionFromMime(dataUrlMime(dataUrl));
-    pendingCovenItemImages[id] = { dataUrl, extension };
-    const existing = covenState.pantry[activeCovenPantrySlot] || { id, name: '', description: '', image: '' };
-    activeCovenItemImageDraft = { id, image: covenItemImagePath(id, extension) };
+    const pendingImages = [{ dataUrl, extension }];
+    const paths = covenItemImagePaths(id, pendingImages);
+    pendingCovenItemImages[id] = { images: pendingImages };
+    const existing = covenState.pantry[activeCovenPantrySlot] || { id, name: '', description: '', image: '', images: [] };
+    activeCovenItemImageDraft = { id, image: paths[0], images: paths };
+    activeCovenItemImageIndex = 0;
     renderCovenItemModalImage({ ...existing, ...activeCovenItemImageDraft });
     setCovenItemModalStatus('Imagem pronta para upload ao salvar o coven.');
   } catch (err) {
@@ -218,30 +513,77 @@ function saveCovenItem(event) {
   if (!name) return setCovenItemModalStatus('Informe o nome do item.', true);
   covenState.pantry[slot] = {
     id: activeCovenItemImageDraft?.id || existing?.id || covenItemId(slot),
+    inventoryId: activeCovenItemImageDraft?.inventoryId || existing?.inventoryId || '',
+    used: activeCovenItemImageDraft?.inventoryId && activeCovenItemImageDraft.inventoryId !== existing?.inventoryId
+      ? false
+      : existing?.used || false,
     name,
     description: document.getElementById('covenItemDescription').value.trim(),
-    image: activeCovenItemImageDraft?.image || existing?.image || ''
+    image: activeCovenItemImageDraft?.image || existing?.image || '',
+    images: activeCovenItemImageDraft?.images || existing?.images || (existing?.image ? [existing.image] : [])
   };
   activeCovenItemImageDraft = null;
   closeCovenItemModal();
   renderCovenPantry();
+  queueCovenProgressSave(`Cadastro ou alteração do item ${name}`);
 }
 
 async function uploadPendingCovenItemImages(auth) {
   for (const [itemId, pending] of Object.entries(pendingCovenItemImages)) {
     const item = covenState.pantry.find(candidate => candidate?.id === itemId);
-    if (!item?.image) continue;
-    const githubPath = joinGitHubPath(auth.sheetsPath, item.image);
-    await upsertGitHubFileBase64(
-      auth.repo,
-      auth.branch,
-      githubPath,
-      dataUrlBase64(pending.dataUrl),
-      `Atualiza imagem do item ${item.name || itemId} do coven`,
-      auth.token
-    );
+    if (!item?.images?.length) continue;
+    for (let index = 0; index < pending.images.length; index += 1) {
+      const image = pending.images[index];
+      const imagePath = item.images[index];
+      if (!image?.dataUrl || !imagePath) continue;
+      await upsertGitHubFileBase64(
+        auth.repo,
+        auth.branch,
+        joinGitHubPath(auth.sheetsPath, imagePath),
+        dataUrlBase64(image.dataUrl),
+        `Atualiza imagem ${index + 1} do item ${item.name || itemId} do coven`,
+        auth.token
+      );
+    }
     delete pendingCovenItemImages[itemId];
   }
+}
+
+function queueCovenProgressSave(reason = 'Atualização da dispensa') {
+  covenProgressSaveQueue = covenProgressSaveQueue
+    .catch(() => {})
+    .then(async () => {
+      if (!covenEditMode || !autosaveAuth) return false;
+      setCovenStatus(`${reason}. Salvando automaticamente sem liberar o lock...`);
+      try {
+        const { file, data } = await fetchCovenFromGithub(autosaveAuth);
+        if (!file?.sha || !covenLockBelongsToSession(data.lock)) {
+          stopCovenEditing('O lock do coven mudou antes do salvamento automático. A edição foi pausada.');
+          setCovenStatus('O lock do coven mudou antes do salvamento automático. A edição foi pausada.', true);
+          return false;
+        }
+        await uploadPendingCovenItemImages(autosaveAuth);
+        const next = normalizeCovenData({ ...covenState, lock: data.lock });
+        await putGitHubFile(
+          autosaveAuth.repo,
+          autosaveAuth.branch,
+          covenGithubPath(autosaveAuth),
+          JSON.stringify(next, null, 2),
+          `Autosave do coven: ${reason}`,
+          autosaveAuth.token,
+          file.sha
+        );
+        replaceCovenState(next);
+        renderCoven();
+        setCovenStatus('Dispensa salva automaticamente. O lock de edição continua ativo.');
+        return true;
+      } catch (error) {
+        console.error('[coven] Falha no salvamento automático da dispensa.', error);
+        setCovenStatus('Não foi possível salvar automaticamente a Dispensa. Tente concluir a edição novamente.', true);
+        return false;
+      }
+    });
+  return covenProgressSaveQueue;
 }
 
 function stopCovenEditing(message = '') {
@@ -249,6 +591,8 @@ function stopCovenEditing(message = '') {
   window.clearTimeout(covenLockTimer);
   covenLockTimer = null;
   if (!document.getElementById('covenItemModal')?.hidden) closeCovenItemModal();
+  closeCovenItemDeleteModal();
+  closeCovenItemUseModal();
   renderCoven();
   setCovenStatus(message);
 }
@@ -326,12 +670,15 @@ async function finishCovenEditing({ automatic = false, allowExpiredOwnLock = fal
   if (automatic) {
     covenEditMode = false;
     if (!document.getElementById('covenItemModal')?.hidden) closeCovenItemModal();
+    closeCovenItemDeleteModal();
+    closeCovenItemUseModal();
     renderCoven();
   }
   setCovenStatus(automatic
     ? 'Limite de 10 minutos atingido. Salvando o coven automaticamente...'
     : 'Salvando coven e removendo lock...');
   try {
+    await covenProgressSaveQueue;
     const { file, data } = await fetchCovenFromGithub(autosaveAuth);
     const ownsRemoteLock = data.lock?.sessionId === covenEditorSessionId
       && (covenLockIsActive(data.lock) || allowExpiredOwnLock);
@@ -412,11 +759,19 @@ function bindCoven() {
     else beginCovenEditing();
   });
   document.getElementById('closeCovenItemModal')?.addEventListener('click', closeCovenItemModal);
-  document.getElementById('covenItemModal')?.addEventListener('click', event => {
-    if (event.target.id === 'covenItemModal') closeCovenItemModal();
-  });
   document.getElementById('covenItemForm')?.addEventListener('submit', saveCovenItem);
   document.getElementById('covenItemImageInput')?.addEventListener('change', event => handleCovenItemImage(event.target.files?.[0]));
+  document.getElementById('importCovenInventoryItemBtn')?.addEventListener('click', importInventoryItem);
+  document.getElementById('previousCovenItemImageBtn')?.addEventListener('click', () => navigateCovenItemImage(-1));
+  document.getElementById('nextCovenItemImageBtn')?.addEventListener('click', () => navigateCovenItemImage(1));
+  document.getElementById('deleteCovenItemBtn')?.addEventListener('click', openCovenItemDeleteModal);
+  document.getElementById('closeCovenItemDeleteModal')?.addEventListener('click', closeCovenItemDeleteModal);
+  document.getElementById('cancelCovenItemDeleteBtn')?.addEventListener('click', closeCovenItemDeleteModal);
+  document.getElementById('confirmCovenItemDeleteBtn')?.addEventListener('click', confirmCovenItemDelete);
+  document.getElementById('useCovenInventoryItemBtn')?.addEventListener('click', useCovenInventoryItem);
+  document.getElementById('closeCovenItemUseModal')?.addEventListener('click', closeCovenItemUseModal);
+  document.getElementById('cancelCovenItemUseBtn')?.addEventListener('click', closeCovenItemUseModal);
+  document.getElementById('confirmCovenItemUseBtn')?.addEventListener('click', confirmCovenItemUse);
   renderCoven();
 }
 
