@@ -1,7 +1,7 @@
 {
   "identity": {
     "name": "Baba Yaga",
-    "experience": 8,
+    "experience": 1,
     "lineage": "linhagem teste",
     "image": "imagens/baba_yaga.png",
     "chronicle": "Idade Média"
@@ -23,7 +23,8 @@
     }
   },
   "spheres": {
-    "forces": 3
+    "forces": 3,
+    "death": 1
   },
   "health": {
     "damage": [
