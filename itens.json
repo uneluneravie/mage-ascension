@@ -1,0 +1,28 @@
+[
+  {
+    "id": "COD03161",
+    "name": "Codex Gigas - Bíblia do Diabo",
+    "description": "Características Físicas: O livro mede 90 cm de altura por 50 cm de largura e pesa 75 kg. Foi confeccionado entre 1204 e 1230, possuindo 310 fólios feitos de velino.\n\nConteúdo: Diferente de uma Bíblia comum, o Codex é uma espécie de enciclopédia medieval. Contém o Antigo e Novo Testamento, obras de Flávio Josefo, as Etimologias de Isidoro de Sevilha, textos médicos e crônicas da Boêmia.\n\nLenda do Escriba: O monge Hermanus Inclusus teria vendido sua alma ao diabo para escrever o livro em apenas uma noite e escapar de uma sentença de morte, o que explicaria a regularidade caligráfica perfeita em todo o volume.\n\nhttps://www.kb.se/eng/the-codex-gigas.html",
+    "imageFolder": "imagens/itens/codex_gigas_biblia_do_diabo-COD03161",
+    "images": [
+      "imagens/itens/codex_gigas_biblia_do_diabo-COD03161/81a7365i3tl_ac_uf1000_1000_ql80-2050b1ab.jpg",
+      "imagens/itens/codex_gigas_biblia_do_diabo-COD03161/codex_gigas_03_1-a87975ab.jpg",
+      "imagens/itens/codex_gigas_biblia_do_diabo-COD03161/a0529766264_16-b63d6d18.jpg",
+      "imagens/itens/codex_gigas_biblia_do_diabo-COD03161/codexgigas_505_matthew-bc745cb0.jpg"
+    ],
+    "effects": [
+      {
+        "sphere": "life",
+        "points": 1,
+        "minLevel": 1,
+        "maxLevel": 3
+      },
+      {
+        "sphere": "death",
+        "points": 1,
+        "minLevel": 1,
+        "maxLevel": 3
+      }
+    ]
+  }
+]
