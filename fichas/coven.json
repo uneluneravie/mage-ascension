@@ -6,7 +6,12 @@
   "fame": 0,
   "lab": "",
   "pantry": [
-    null,
+    {
+      "id": "item-1788025919970-1",
+      "name": "Grimoire du Pape Honorius",
+      "description": "",
+      "image": "imagens/coven/item_1788025919970_1.png"
+    },
     null,
     null,
     null,
