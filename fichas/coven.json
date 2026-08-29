@@ -6,17 +6,7 @@
   "fame": 0,
   "lab": "",
   "pantry": [
-    {
-      "id": "item-1788025919970-1",
-      "inventoryId": "",
-      "used": false,
-      "name": "Grimoire du Pape Honorius",
-      "description": "",
-      "image": "imagens/coven/item_1788025919970_1.png",
-      "images": [
-        "imagens/coven/item_1788025919970_1.png"
-      ]
-    },
+    null,
     {
       "id": "item-1788027609343-2",
       "inventoryId": "COD03161",
