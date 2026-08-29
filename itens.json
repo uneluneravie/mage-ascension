@@ -24,5 +24,16 @@
         "maxLevel": 3
       }
     ]
+  },
+  {
+    "id": "GRI70745",
+    "name": "Grimoire du Pape Honorius",
+    "description": "",
+    "imageFolder": "imagens/itens/grimoire_du_pape_honorius-GRI70745",
+    "images": [
+      "imagens/itens/grimoire_du_pape_honorius-GRI70745/grimoire_du_pape_honorius_allegedly_1760-cdaea1a6.jpg",
+      "imagens/itens/grimoire_du_pape_honorius-GRI70745/grimoire_du_pape_honorius_allegedly_1760_copy-05f3d92a.jpg"
+    ],
+    "effects": []
   }
 ]
