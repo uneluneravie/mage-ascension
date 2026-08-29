@@ -36,10 +36,5 @@
     null,
     null
   ],
-  "lock": {
-    "owner": "uneluneravie",
-    "sessionId": "1788029070009-iaxbhqd852",
-    "acquiredAt": "2026-08-29T18:44:46.573Z",
-    "expiresAt": "2026-08-29T18:54:46.573Z"
-  }
+  "lock": null
 }
