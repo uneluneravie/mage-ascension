@@ -24,7 +24,7 @@
   },
   "spheres": {
     "forces": 3,
-    "death": 1
+    "death": 2
   },
   "health": {
     "damage": [
